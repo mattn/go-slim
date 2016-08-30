@@ -127,6 +127,8 @@ func ParseFile(name string) (*Template, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer f.Close()
+
 	scanner := bufio.NewScanner(f)
 	root := new(Node)
 	node := root
