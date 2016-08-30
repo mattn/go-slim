@@ -26,6 +26,8 @@ func invoke(v *VM, expr Expr) (interface{}, error) {
 			return r, nil
 		}
 		return nil, errors.New("invalid token")
+	case *LitExpr:
+		return t.value, nil
 	}
 	return nil, nil
 }

@@ -37,5 +37,9 @@ rhs : IDENT
     {
       $$ = &IdentExpr{$1}
     }
+	| LIT
+	{
+      $$ = &LitExpr{$1}
+	}
     ;
 %%
