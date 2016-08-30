@@ -62,3 +62,17 @@ func TestValue(t *testing.T) {
 		t.Fatalf("expected %v but %v", expect, got)
 	}
 }
+
+func TestUnknownIdentifier(t *testing.T) {
+	tmpl, err := ParseFile("testdir/test2.slim")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var buf bytes.Buffer
+	err = tmpl.Execute(&buf, map[string]interface{}{
+		"bar": "baz",
+	})
+	if err == nil {
+		t.Fatal("should be fail")
+	}
+}
