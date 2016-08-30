@@ -3,9 +3,13 @@ package slim
 import (
 	"bufio"
 	"errors"
+	"fmt"
+	"io"
 	"os"
 	"strings"
 	"unicode"
+
+	"github.com/mattn/go-slim/vm"
 )
 
 type state int
@@ -69,57 +73,77 @@ func isEmptyElement(n string) bool {
 	return false
 }
 
-func printNode(n *Node, indent int) string {
-	s := ""
+func printNode(out io.Writer, vm *vm.VM, n *Node, indent int) error {
 	if n.Name == "" {
 		for _, c := range n.Children {
-			s += c.String()
+			if err := printNode(out, vm, c, indent); err != nil {
+				return err
+			}
 		}
 	} else {
-		s += strings.Repeat(" ", indent*2) + "<" + n.Name
+		// FIXME
+		doctype := n.Name == "doctype"
+		if doctype {
+			out.Write([]byte(strings.Repeat(" ", indent*2) + "<!" + n.Name))
+		} else {
+			out.Write([]byte(strings.Repeat(" ", indent*2) + "<" + n.Name))
+		}
 		if n.Id != "" {
-			s += " id=\"" + n.Id + "\""
+			out.Write([]byte(" id=\"" + n.Id + "\""))
 		}
 		if len(n.Class) > 0 {
-			s += " class="
+			out.Write([]byte(" class="))
 			for i, c := range n.Class {
 				if i > 0 {
-					s += " "
+					out.Write([]byte(" ="))
 				}
-				s += c
+				out.Write([]byte(c))
 			}
 		}
 		if len(n.Attr) > 0 {
 			for i, a := range n.Attr {
 				if i > 0 {
-					s += " "
+					out.Write([]byte(" ="))
 				}
-				s += " " + a.Name + "=" + a.Value
+				out.Write([]byte(" " + a.Name + "=" + a.Value))
 			}
 		}
 		if !isEmptyElement(n.Name) {
-			s += ">\n"
+			out.Write([]byte(">"))
+			cr := true
+			if n.Expr != "" {
+				r, err := vm.Run(n.Expr)
+				if err != nil {
+					return err
+				}
+				out.Write([]byte(fmt.Sprint(r)))
+				cr = false
+			}
+			if len(n.Children) > 0 {
+				out.Write([]byte("\n"))
+				for _, c := range n.Children {
+					if err := printNode(out, vm, c, indent+1); err != nil {
+						return err
+					}
+				}
+			} else if cr {
+				out.Write([]byte("\n"))
+			}
+			if cr {
+				out.Write([]byte(strings.Repeat(" ", indent*2)))
+			}
+			out.Write([]byte("</" + n.Name + ">\n"))
+		} else if doctype {
+			out.Write([]byte(">\n"))
 		} else {
-			s += "/>\n"
-		}
-		if len(n.Children) > 0 {
-			for _, c := range n.Children {
-				s += printNode(c, indent+1)
-			}
-		}
-		if !isEmptyElement(n.Name) {
-			s += strings.Repeat(" ", indent*2) + "</" + n.Name + ">\n"
+			out.Write([]byte("/>\n"))
 		}
 	}
-	return s
-}
-
-func (n *Node) String() string {
-	return printNode(n, 0)
+	return nil
 }
 
 type Template struct {
-	Root *Node
+	root *Node
 }
 
 func ParseFile(name string) (*Template, error) {
@@ -310,5 +334,10 @@ func ParseFile(name string) (*Template, error) {
 	return &Template{root}, nil
 }
 
-func (t *Template) Execute() {
+func (t *Template) Execute(out io.Writer, value map[string]interface{}) error {
+	vm := vm.New()
+	for k, v := range value {
+		vm.Set(k, v)
+	}
+	return printNode(out, vm, t.root, 0)
 }
