@@ -84,7 +84,8 @@ func printNode(out io.Writer, vm *vm.VM, n *Node, indent int) error {
 		// FIXME
 		doctype := n.Name == "doctype"
 		if doctype {
-			out.Write([]byte(strings.Repeat(" ", indent*2) + "<!" + n.Name))
+			out.Write([]byte(strings.Repeat(" ", indent*2) + "<!" + n.Name + " html"))
+			n.Attr = nil
 		} else {
 			out.Write([]byte(strings.Repeat(" ", indent*2) + "<" + n.Name))
 		}
@@ -95,7 +96,7 @@ func printNode(out io.Writer, vm *vm.VM, n *Node, indent int) error {
 			out.Write([]byte(" class="))
 			for i, c := range n.Class {
 				if i > 0 {
-					out.Write([]byte(" ="))
+					out.Write([]byte(" "))
 				}
 				out.Write([]byte(c))
 			}
@@ -103,9 +104,13 @@ func printNode(out io.Writer, vm *vm.VM, n *Node, indent int) error {
 		if len(n.Attr) > 0 {
 			for i, a := range n.Attr {
 				if i > 0 {
-					out.Write([]byte(" ="))
+					out.Write([]byte(" "))
 				}
-				out.Write([]byte(" " + a.Name + "=" + a.Value))
+				if a.Value == "" {
+					out.Write([]byte(" " + a.Name))
+				} else {
+					fmt.Fprintf(out, " %s=%q", a.Name, a.Value)
+				}
 			}
 		}
 		if !isEmptyElement(n.Name) {
@@ -278,7 +283,7 @@ func ParseFile(name string) (*Template, error) {
 				}
 			case sAttrKey:
 				if eol {
-					if unicode.IsLetter(r) {
+					if !unicode.IsSpace(r) {
 						name += string(r)
 						node.Attr = append(node.Attr, Attr{Name: name, Value: ""})
 					}
