@@ -18,11 +18,19 @@ func fatalIf(err error) {
 func main() {
 	t, err := slim.Parse(os.Stdin)
 	fatalIf(err)
-	m := make(map[string]string)
+	m := make(map[string]interface{})
 	for _, arg := range os.Args[1:] {
 		token := strings.SplitN(arg, "=", 2)
 		if len(token) == 2 {
-			m[token[0]] = token[1]
+			if v, ok := m[token[0]]; ok {
+				if a, ok := v.([]string); ok {
+					m[token[0]] = append(a, token[1])
+				} else {
+					m[token[0]] = []string{v.(string), token[1]}
+				}
+			} else {
+				m[token[0]] = token[1]
+			}
 		}
 	}
 	err = t.Execute(os.Stdout, m)
