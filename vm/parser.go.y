@@ -4,6 +4,7 @@ package vm
 
 %union {
   expr Expr
+  exprs []Expr
   str string
   lit interface{}
 }
@@ -11,6 +12,7 @@ package vm
 %type<expr> stmt
 %type<expr> expr
 %type<expr> rhs
+%type<exprs> exprs
 %token<str> IDENT
 %token<lit> LIT FOR IN
 
@@ -30,11 +32,25 @@ stmt :  FOR IDENT IN IDENT
      }
      ;
 
+exprs :
+      {
+          $$ = nil
+      }
+      | expr 
+      {
+          $$ = []Expr{$1}
+      }
+      | exprs ',' expr
+      {
+          $$ = append($1, $3)
+      }
+      ;
+
 expr : rhs
      {
        $$ = $1
      }
-     | IDENT '(' expr ')'
+     | IDENT '(' exprs ')'
      {
        $$ = &CallExpr{$1, $3}
      }

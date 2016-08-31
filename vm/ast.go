@@ -18,6 +18,6 @@ type ForExpr struct {
 }
 
 type CallExpr struct {
-	Name string
-	Expr Expr
+	Name  string
+	Exprs []Expr
 }

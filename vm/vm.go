@@ -36,16 +36,30 @@ func (v *VM) Eval(expr Expr) (interface{}, error) {
 		return t.Value, nil
 	case *CallExpr:
 		if f, ok := v.env[t.Name]; ok {
-			arg, err := v.Eval(t.Expr)
-			if err != nil {
-				return nil, err
-			}
 			rf := reflect.ValueOf(f)
-			ret := rf.Call([]reflect.Value{reflect.ValueOf(arg)})
-			if len(ret) == 0 {
+			args := []reflect.Value{}
+			for _, arg := range t.Exprs {
+				arg, err := v.Eval(arg)
+				if err != nil {
+					return nil, err
+				}
+				args = append(args, reflect.ValueOf(arg))
+			}
+			rets := rf.Call(args)
+			if len(rets) == 0 {
 				return nil, nil
 			}
-			return ret[0].Interface(), nil
+			vals := []interface{}{}
+			for _, ret := range rets {
+				vals = append(vals, ret.Interface())
+			}
+			if len(rets) == 1 {
+				return vals[0], nil
+			}
+			if err, ok := vals[1].(error); ok {
+				return vals[0], err
+			}
+			return vals[0], nil
 		}
 		return nil, errors.New("invalid token: " + t.Name)
 	}

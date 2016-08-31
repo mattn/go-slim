@@ -46,7 +46,9 @@ var emptyElement = []string{
 	"command",
 }
 
-type Func func(interface{}) interface{}
+type Value interface{}
+
+type Func func(Value) (Value, error)
 
 type Attr struct {
 	Name  string

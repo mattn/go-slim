@@ -90,8 +90,8 @@ func TestFunc(t *testing.T) {
 		t.Fatal(err)
 	}
 	tmpl.FuncMap(map[string]Func{
-		"greet": func(v interface{}) interface{} {
-			return fmt.Sprintf("Hello %v", v)
+		"greet": func(v Value) (Value, error) {
+			return fmt.Sprintf("Hello %v", v), nil
 		},
 	})
 	var buf bytes.Buffer
