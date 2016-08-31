@@ -461,7 +461,9 @@ func Parse(in io.Reader) (*Template, error) {
 			case sExpr:
 				node.Expr += string(r)
 			case sText:
-				node.Text += string(r)
+				if node.Text != "" || !unicode.IsSpace(r) {
+					node.Text += string(r)
+				}
 			}
 		}
 	}
