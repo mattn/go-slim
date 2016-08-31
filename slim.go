@@ -50,6 +50,9 @@ type Value interface{}
 
 type Func func(Value) (Value, error)
 
+type Funcs map[string]Func
+type Values map[string]Value
+
 type Attr struct {
 	Name  string
 	Value string
@@ -181,7 +184,7 @@ func printNode(out io.Writer, v *vm.VM, n *Node, indent int) error {
 
 type Template struct {
 	root *Node
-	fm   map[string]Func
+	fm   Funcs
 }
 
 func ParseFile(name string) (*Template, error) {
@@ -191,7 +194,11 @@ func ParseFile(name string) (*Template, error) {
 	}
 	defer f.Close()
 
-	scanner := bufio.NewScanner(f)
+	return Parse(f)
+}
+
+func Parse(in io.Reader) (*Template, error) {
+	scanner := bufio.NewScanner(in)
 	root := new(Node)
 	node := root
 	stk := []stack{}
@@ -210,10 +217,6 @@ func ParseFile(name string) (*Template, error) {
 			r := rs[n]
 			switch st {
 			case sNeutral:
-				if eol {
-					last = n
-					break
-				}
 				if r == '-' {
 					st = sExpr
 				} else if !unicode.IsSpace(r) {
@@ -224,6 +227,9 @@ func ParseFile(name string) (*Template, error) {
 						node = node.Children[len(node.Children)-1]
 						stk = append(stk, stack{n: n, node: node})
 						last = n
+						if eol {
+							node.Name = tag
+						}
 					} else if n <= last {
 						node = nil
 						for i := len(stk) - 1; i >= 0; i-- {
@@ -374,7 +380,7 @@ func ParseFile(name string) (*Template, error) {
 	return &Template{root, nil}, nil
 }
 
-func (t *Template) FuncMap(m map[string]Func) {
+func (t *Template) FuncMap(m Funcs) {
 	t.fm = m
 }
 
