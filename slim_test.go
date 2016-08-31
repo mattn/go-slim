@@ -38,7 +38,7 @@ func TestValue(t *testing.T) {
 		t.Fatal(err)
 	}
 	var buf bytes.Buffer
-	err = tmpl.Execute(&buf, map[string]interface{}{
+	err = tmpl.Execute(&buf, Values{
 		"foo": "bar",
 	})
 	if err != nil {
@@ -57,7 +57,7 @@ func TestUnknownIdentifier(t *testing.T) {
 		t.Fatal(err)
 	}
 	var buf bytes.Buffer
-	err = tmpl.Execute(&buf, map[string]interface{}{
+	err = tmpl.Execute(&buf, Values{
 		"bar": "baz",
 	})
 	if err == nil {
@@ -71,7 +71,7 @@ func TestEach(t *testing.T) {
 		t.Fatal(err)
 	}
 	var buf bytes.Buffer
-	err = tmpl.Execute(&buf, map[string]interface{}{
+	err = tmpl.Execute(&buf, Values{
 		"foo": []string{"foo", "bar", "baz"},
 	})
 	if err != nil {
@@ -89,19 +89,43 @@ func TestFunc(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	tmpl.FuncMap(map[string]Func{
+	tmpl.FuncMap(Funcs{
 		"greet": func(v Value) (Value, error) {
 			return fmt.Sprintf("Hello %v", v), nil
 		},
 	})
 	var buf bytes.Buffer
-	err = tmpl.Execute(&buf, map[string]interface{}{
+	err = tmpl.Execute(&buf, Values{
 		"name": "golang",
 	})
 	if err != nil {
 		t.Fatal(err)
 	}
 	expect := readFile("testdir/test_func.html")
+	got := buf.String()
+	if expect != got {
+		t.Fatalf("expected %v but %v", expect, got)
+	}
+}
+
+func TestTrim(t *testing.T) {
+	tmpl, err := ParseFile("testdir/test_builtins.slim")
+	if err != nil {
+		t.Fatal(err)
+	}
+	tmpl.FuncMap(Funcs{
+		"trim":     Trim,
+		"to_upper": ToUpper,
+		"to_lower": ToLower,
+	})
+	var buf bytes.Buffer
+	err = tmpl.Execute(&buf, Values{
+		"name": "golang",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	expect := readFile("testdir/test_builtins.html")
 	got := buf.String()
 	if expect != got {
 		t.Fatalf("expected %v but %v", expect, got)
