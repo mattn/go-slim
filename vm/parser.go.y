@@ -11,7 +11,7 @@ package vm
 
 %type<expr> stmt
 %type<expr> expr
-%type<expr> rhs
+%type<expr> value
 %type<exprs> exprs
 %token<str> IDENT
 %token<lit> LIT FOR IN
@@ -46,9 +46,25 @@ exprs :
       }
       ;
 
-expr : rhs
+expr : value
      {
        $$ = $1
+     }
+     | value '+' value
+     {
+       $$ = &BinOpExpr{"+", $1, $3}
+     }
+     | value '-' value
+     {
+       $$ = &BinOpExpr{"-", $1, $3}
+     }
+     | value '*' value
+     {
+       $$ = &BinOpExpr{"*", $1, $3}
+     }
+     | value '/' value
+     {
+       $$ = &BinOpExpr{"/", $1, $3}
      }
      | IDENT '(' exprs ')'
      {
@@ -56,13 +72,15 @@ expr : rhs
      }
      ;
 
-rhs : IDENT
-    {
-      $$ = &IdentExpr{$1}
-    }
-    | LIT
-    {
-      $$ = &LitExpr{$1}
-    }
-    ;
+value : IDENT
+      {
+        $$ = &IdentExpr{$1}
+      }
+      | LIT
+      {
+        $$ = &LitExpr{$1}
+      }
+      ;
 %%
+
+/* vim: set et sw=2: */

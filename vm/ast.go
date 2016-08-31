@@ -3,6 +3,12 @@ package vm
 type Expr interface {
 }
 
+type BinOpExpr struct {
+	Op  string
+	Lhs Expr
+	Rhs Expr
+}
+
 type IdentExpr struct {
 	Name string
 }

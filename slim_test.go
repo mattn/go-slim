@@ -108,7 +108,7 @@ func TestFunc(t *testing.T) {
 	}
 }
 
-func TestTrim(t *testing.T) {
+func TestBuiltins(t *testing.T) {
 	tmpl, err := ParseFile("testdir/test_builtins.slim")
 	if err != nil {
 		t.Fatal(err)
@@ -126,6 +126,30 @@ func TestTrim(t *testing.T) {
 		t.Fatal(err)
 	}
 	expect := readFile("testdir/test_builtins.html")
+	got := buf.String()
+	if expect != got {
+		t.Fatalf("expected %v but %v", expect, got)
+	}
+}
+
+func TestOp(t *testing.T) {
+	tmpl, err := ParseFile("testdir/test_op.slim")
+	if err != nil {
+		t.Fatal(err)
+	}
+	tmpl.FuncMap(Funcs{
+		"trim":     Trim,
+		"to_upper": ToUpper,
+		"to_lower": ToLower,
+	})
+	var buf bytes.Buffer
+	err = tmpl.Execute(&buf, Values{
+		"name": "golang",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	expect := readFile("testdir/test_op.html")
 	got := buf.String()
 	if expect != got {
 		t.Fatalf("expected %v but %v", expect, got)

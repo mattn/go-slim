@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
+	"strconv"
 	"strings"
 	"text/scanner"
 )
@@ -34,6 +35,57 @@ func (v *VM) Eval(expr Expr) (interface{}, error) {
 		return nil, errors.New("invalid token: " + t.Name)
 	case *LitExpr:
 		return t.Value, nil
+	case *BinOpExpr:
+		lhs, err := v.Eval(t.Lhs)
+		if err != nil {
+			return nil, err
+		}
+		rhs, err := v.Eval(t.Rhs)
+		if err != nil {
+			return nil, err
+		}
+		switch vt := lhs.(type) {
+		case string:
+			switch t.Op {
+			case "+":
+				return vt + fmt.Sprint(rhs), nil
+			}
+			return nil, errors.New("unknown operator")
+		case int64:
+			i, err := strconv.ParseInt(fmt.Sprint(rhs), 10, 64)
+			if err != nil {
+				return nil, err
+			}
+			switch t.Op {
+			case "+":
+				return vt + i, nil
+			case "-":
+				return vt - i, nil
+			case "*":
+				return vt * i, nil
+			case "/":
+				return vt / i, nil
+			}
+			return nil, errors.New("unknown operator")
+		case float64:
+			f, err := strconv.ParseFloat(fmt.Sprint(rhs), 64)
+			if err != nil {
+				return nil, err
+			}
+			switch t.Op {
+			case "+":
+				return vt + f, nil
+			case "-":
+				return vt - f, nil
+			case "*":
+				return vt * f, nil
+			case "/":
+				return vt / f, nil
+			}
+			return nil, errors.New("unknown operator")
+		default:
+			return nil, errors.New("invalid type conversion")
+		}
 	case *CallExpr:
 		if f, ok := v.env[t.Name]; ok {
 			rf := reflect.ValueOf(f)

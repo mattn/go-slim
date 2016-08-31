@@ -34,7 +34,7 @@ func (l *Lexer) Lex(v *yySymType) int {
 		}
 	case scanner.Int:
 		tok = LIT
-		v.lit, err = strconv.Atoi(l.s.TokenText())
+		v.lit, err = strconv.ParseInt(l.s.TokenText(), 10, 64)
 		if err != nil {
 			return -1
 		}
