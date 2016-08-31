@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"reflect"
 	"strings"
 	"unicode"
 
@@ -16,7 +17,7 @@ type state int
 
 const (
 	sNeutral state = iota
-	sTagName
+	sName
 	sId
 	sClass
 	sAttrKey
@@ -45,11 +46,6 @@ var emptyElement = []string{
 	"command",
 }
 
-type stack struct {
-	n    int
-	node *Node
-}
-
 type Attr struct {
 	Name  string
 	Value string
@@ -63,6 +59,10 @@ type Node struct {
 	Expr     string
 	Children []*Node
 }
+type stack struct {
+	n    int
+	node *Node
+}
 
 func isEmptyElement(n string) bool {
 	for _, e := range emptyElement {
@@ -73,10 +73,10 @@ func isEmptyElement(n string) bool {
 	return false
 }
 
-func printNode(out io.Writer, vm *vm.VM, n *Node, indent int) error {
+func printNode(out io.Writer, v *vm.VM, n *Node, indent int) error {
 	if n.Name == "" {
 		for _, c := range n.Children {
-			if err := printNode(out, vm, c, indent); err != nil {
+			if err := printNode(out, v, c, indent); err != nil {
 				return err
 			}
 		}
@@ -117,17 +117,45 @@ func printNode(out io.Writer, vm *vm.VM, n *Node, indent int) error {
 			out.Write([]byte(">"))
 			cr := true
 			if n.Expr != "" {
-				r, err := vm.Run(n.Expr)
+				expr, err := v.Compile(n.Expr)
 				if err != nil {
 					return err
 				}
-				out.Write([]byte(fmt.Sprint(r)))
-				cr = false
-			}
-			if len(n.Children) > 0 {
+				fe, ok := expr.(*vm.ForExpr)
+				if ok {
+					rhs, ok := v.Get(fe.Rhs)
+					if !ok {
+						return errors.New("invalid token: " + fe.Rhs)
+					}
+					ra := reflect.ValueOf(rhs)
+					switch ra.Type().Kind() {
+					case reflect.Array, reflect.Slice:
+					default:
+						return errors.New("can't iterate: " + fe.Rhs)
+					}
+					out.Write([]byte("\n"))
+					l := ra.Len()
+					for i := 0; i < l; i++ {
+						x := ra.Index(i).Interface()
+						v.Set(fe.Lhs1, x)
+						for _, c := range n.Children {
+							if err := printNode(out, v, c, indent+1); err != nil {
+								return err
+							}
+						}
+					}
+				} else {
+					r, err := v.Eval(expr)
+					if err != nil {
+						return err
+					}
+					out.Write([]byte(fmt.Sprint(r)))
+					cr = false
+				}
+			} else if len(n.Children) > 0 {
 				out.Write([]byte("\n"))
 				for _, c := range n.Children {
-					if err := printNode(out, vm, c, indent+1); err != nil {
+					if err := printNode(out, v, c, indent+1); err != nil {
 						return err
 					}
 				}
@@ -181,8 +209,10 @@ func ParseFile(name string) (*Template, error) {
 					last = n
 					break
 				}
-				if !unicode.IsSpace(r) {
-					st = sTagName
+				if r == '-' {
+					st = sExpr
+				} else if !unicode.IsSpace(r) {
+					st = sName
 					tag += string(r)
 					if n > last {
 						node.Children = append(node.Children, new(Node))
@@ -216,7 +246,7 @@ func ParseFile(name string) (*Template, error) {
 						}
 					}
 				}
-			case sTagName:
+			case sName:
 				if eol {
 					tag += string(r)
 					node.Name = tag
@@ -340,9 +370,9 @@ func ParseFile(name string) (*Template, error) {
 }
 
 func (t *Template) Execute(out io.Writer, value map[string]interface{}) error {
-	vm := vm.New()
-	for k, v := range value {
-		vm.Set(k, v)
+	v := vm.New()
+	for key, val := range value {
+		v.Set(key, val)
 	}
-	return printNode(out, vm, t.root, 0)
+	return printNode(out, v, t.root, 0)
 }

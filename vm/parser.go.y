@@ -13,13 +13,17 @@ package vm
 %type<stmt> stmt
 %type<expr> rhs
 %token<str> IDENT
-%token<lit> LIT FOR RANGE
+%token<lit> LIT FOR IN
 
 %%
 
-stmt :  FOR IDENT ',' IDENT ':' '=' RANGE IDENT
+stmt :  FOR IDENT IN IDENT
      {
-       yylex.(*Lexer).e = &RangeExpr{$2, $4, $8}
+       yylex.(*Lexer).e = &ForExpr{$2, "", $4}
+     }
+     | FOR IDENT ',' IDENT IN IDENT
+     {
+       yylex.(*Lexer).e = &ForExpr{$2, $4, $6}
      }
      | expr
      {

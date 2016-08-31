@@ -27,8 +27,8 @@ func (l *Lexer) Lex(v *yySymType) int {
 		switch v.str {
 		case "for":
 			tok = FOR
-		case "range":
-			tok = RANGE
+		case "in":
+			tok = IN
 		default:
 			tok = IDENT
 		}

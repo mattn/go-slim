@@ -19,24 +19,29 @@ func (v *VM) Set(n string, vv interface{}) {
 	v.env[n] = vv
 }
 
-func invoke(v *VM, expr Expr) (interface{}, error) {
+func (v *VM) Get(n string) (interface{}, bool) {
+	val, ok := v.env[n]
+	return val, ok
+}
+
+func (v *VM) Eval(expr Expr) (interface{}, error) {
 	switch t := expr.(type) {
 	case *IdentExpr:
-		if r, ok := v.env[t.name]; ok {
+		if r, ok := v.env[t.Name]; ok {
 			return r, nil
 		}
-		return nil, errors.New("invalid token")
+		return nil, errors.New("invalid token: " + t.Name)
 	case *LitExpr:
-		return t.value, nil
+		return t.Value, nil
 	}
 	return nil, nil
 }
 
-func (v *VM) Run(s string) (interface{}, error) {
+func (v *VM) Compile(s string) (Expr, error) {
 	lex := &Lexer{new(scanner.Scanner), nil}
 	lex.s.Init(strings.NewReader(s))
 	if yyParse(lex) != 0 {
 		return nil, fmt.Errorf("syntax error: %s", s)
 	}
-	return invoke(v, lex.e)
+	return lex.e, nil
 }

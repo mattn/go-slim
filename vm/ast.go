@@ -4,15 +4,15 @@ type Expr interface {
 }
 
 type IdentExpr struct {
-	name string
+	Name string
 }
 
 type LitExpr struct {
-	value interface{}
+	Value interface{}
 }
 
-type RangeExpr struct {
-	lhs1 string
-	lhs2 string
-	rhs  string
+type ForExpr struct {
+	Lhs1 string
+	Lhs2 string
+	Rhs  string
 }

@@ -7,7 +7,11 @@ import (
 func TestInt(t *testing.T) {
 	v := New()
 	v.Set("foo", 1)
-	r, err := v.Run("foo")
+	expr, err := v.Compile(`foo`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	r, err := v.Eval(expr)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -20,7 +24,11 @@ func TestInt(t *testing.T) {
 func TestString(t *testing.T) {
 	v := New()
 	v.Set("foo", 2)
-	r, err := v.Run(`"foo"`)
+	expr, err := v.Compile(`"foo"`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	r, err := v.Eval(expr)
 	if err != nil {
 		t.Fatal(err)
 	}
