@@ -50,19 +50,23 @@ expr : value
      {
        $$ = $1
      }
-     | value '+' value
+     | '(' expr ')'
+     {
+       $$ = $2
+     }
+     | expr '+' expr
      {
        $$ = &BinOpExpr{"+", $1, $3}
      }
-     | value '-' value
+     | expr '-' expr
      {
        $$ = &BinOpExpr{"-", $1, $3}
      }
-     | value '*' value
+     | expr '*' expr
      {
        $$ = &BinOpExpr{"*", $1, $3}
      }
-     | value '/' value
+     | expr '/' expr
      {
        $$ = &BinOpExpr{"/", $1, $3}
      }
