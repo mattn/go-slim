@@ -251,12 +251,13 @@ func Parse(in io.Reader) (*Template, error) {
 					}
 					node = cur.NewChild()
 					last = n
+					stk[len(stk)-1].node = node
 				} else if n < last {
 					node = nil
-					for i := 0; i < len(stk)-1; i++ {
-						if stk[i+1].n >= n {
-							node = stk[i].node
-							stk = stk[:i+1]
+					for i := 0; i < len(stk); i++ {
+						if stk[i].n >= n {
+							node = stk[i-1].node
+							stk = stk[:i]
 							break
 						}
 					}
