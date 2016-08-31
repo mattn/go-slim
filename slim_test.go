@@ -65,7 +65,7 @@ func TestUnknownIdentifier(t *testing.T) {
 	}
 }
 
-func TestEach(t *testing.T) {
+func TestEachArray(t *testing.T) {
 	tmpl, err := ParseFile("testdir/test_each.slim")
 	if err != nil {
 		t.Fatal(err)
@@ -73,6 +73,34 @@ func TestEach(t *testing.T) {
 	var buf bytes.Buffer
 	err = tmpl.Execute(&buf, Values{
 		"foo": []string{"foo", "bar", "baz"},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	expect := readFile("testdir/test_each.html")
+	got := buf.String()
+	if expect != got {
+		t.Fatalf("expected %v but %v", expect, got)
+	}
+}
+
+func TestEachChan(t *testing.T) {
+	tmpl, err := ParseFile("testdir/test_each.slim")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	ch := make(chan string)
+	go func() {
+		for _, a := range []string{"foo", "bar", "baz"} {
+			ch <- a
+		}
+		close(ch)
+	}()
+
+	var buf bytes.Buffer
+	err = tmpl.Execute(&buf, Values{
+		"foo": ch,
 	})
 	if err != nil {
 		t.Fatal(err)

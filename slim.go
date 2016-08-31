@@ -175,24 +175,48 @@ func printNode(out io.Writer, v *vm.VM, n *Node, indent int) error {
 						return errors.New("invalid token: " + fe.Rhs)
 					}
 					ra := reflect.ValueOf(rhs)
-					switch ra.Type().Kind() {
-					case reflect.Array, reflect.Slice:
+					typ := ra.Type().Kind()
+					switch typ {
+					case reflect.Array, reflect.Slice, reflect.Chan:
 					default:
 						return errors.New("can't iterate: " + fe.Rhs)
 					}
 					out.Write([]byte("\n"))
-					l := ra.Len()
-					for i := 0; i < l; i++ {
-						x := ra.Index(i).Interface()
-						if fe.Lhs2 != "" {
-							v.Set(fe.Lhs1, i)
-							v.Set(fe.Lhs2, x)
-						} else {
-							v.Set(fe.Lhs1, x)
+					if typ == reflect.Chan {
+						i := 0
+						for {
+							rr, ok := ra.Recv()
+							if !ok {
+								break
+							}
+							x := rr.Interface()
+							i++
+							if fe.Lhs2 != "" {
+								v.Set(fe.Lhs1, i)
+								v.Set(fe.Lhs2, x)
+							} else {
+								v.Set(fe.Lhs1, x)
+							}
+							for _, c := range n.Children {
+								if err := printNode(out, v, c, indent+1); err != nil {
+									return err
+								}
+							}
 						}
-						for _, c := range n.Children {
-							if err := printNode(out, v, c, indent+1); err != nil {
-								return err
+					} else {
+						l := ra.Len()
+						for i := 0; i < l; i++ {
+							x := ra.Index(i).Interface()
+							if fe.Lhs2 != "" {
+								v.Set(fe.Lhs1, i)
+								v.Set(fe.Lhs2, x)
+							} else {
+								v.Set(fe.Lhs1, x)
+							}
+							for _, c := range n.Children {
+								if err := printNode(out, v, c, indent+1); err != nil {
+									return err
+								}
 							}
 						}
 					}
