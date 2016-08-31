@@ -3,14 +3,13 @@ package vm
 %}
 
 %union {
-  stmt Expr
-  str string
   expr Expr
+  str string
   lit interface{}
 }
 
+%type<expr> stmt
 %type<expr> expr
-%type<stmt> stmt
 %type<expr> rhs
 %token<str> IDENT
 %token<lit> LIT FOR IN
@@ -35,15 +34,19 @@ expr : rhs
      {
        $$ = $1
      }
+     | IDENT '(' expr ')'
+     {
+       $$ = &CallExpr{$1, $3}
+     }
      ;
 
 rhs : IDENT
     {
       $$ = &IdentExpr{$1}
     }
-	| LIT
-	{
+    | LIT
+    {
       $$ = &LitExpr{$1}
-	}
+    }
     ;
 %%

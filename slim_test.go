@@ -2,6 +2,7 @@ package slim
 
 import (
 	"bytes"
+	"fmt"
 	"io/ioutil"
 	"testing"
 )
@@ -77,6 +78,30 @@ func TestEach(t *testing.T) {
 		t.Fatal(err)
 	}
 	expect := readFile("testdir/test_each.html")
+	got := buf.String()
+	if expect != got {
+		t.Fatalf("expected %v but %v", expect, got)
+	}
+}
+
+func TestFunc(t *testing.T) {
+	tmpl, err := ParseFile("testdir/test_func.slim")
+	if err != nil {
+		t.Fatal(err)
+	}
+	tmpl.FuncMap(map[string]Func{
+		"greet": func(v interface{}) interface{} {
+			return fmt.Sprintf("Hello %v", v)
+		},
+	})
+	var buf bytes.Buffer
+	err = tmpl.Execute(&buf, map[string]interface{}{
+		"name": "golang",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	expect := readFile("testdir/test_func.html")
 	got := buf.String()
 	if expect != got {
 		t.Fatalf("expected %v but %v", expect, got)

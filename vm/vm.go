@@ -3,6 +3,7 @@ package vm
 import (
 	"errors"
 	"fmt"
+	"reflect"
 	"strings"
 	"text/scanner"
 )
@@ -33,6 +34,20 @@ func (v *VM) Eval(expr Expr) (interface{}, error) {
 		return nil, errors.New("invalid token: " + t.Name)
 	case *LitExpr:
 		return t.Value, nil
+	case *CallExpr:
+		if f, ok := v.env[t.Name]; ok {
+			arg, err := v.Eval(t.Expr)
+			if err != nil {
+				return nil, err
+			}
+			rf := reflect.ValueOf(f)
+			ret := rf.Call([]reflect.Value{reflect.ValueOf(arg)})
+			if len(ret) == 0 {
+				return nil, nil
+			}
+			return ret[0].Interface(), nil
+		}
+		return nil, errors.New("invalid token: " + t.Name)
 	}
 	return nil, nil
 }

@@ -16,3 +16,8 @@ type ForExpr struct {
 	Lhs2 string
 	Rhs  string
 }
+
+type CallExpr struct {
+	Name string
+	Expr Expr
+}

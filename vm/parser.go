@@ -7,9 +7,8 @@ import __yyfmt__ "fmt"
 //line parser.go.y:5
 type yySymType struct {
 	yys  int
-	stmt Expr
-	str  string
 	expr Expr
+	str  string
 	lit  interface{}
 }
 
@@ -27,6 +26,8 @@ var yyToknames = [...]string{
 	"FOR",
 	"IN",
 	"','",
+	"'('",
+	"')'",
 }
 var yyStatenames = [...]string{}
 
@@ -34,7 +35,7 @@ const yyEofCode = 1
 const yyErrCode = 2
 const yyInitialStackSize = 16
 
-//line parser.go.y:49
+//line parser.go.y:52
 
 //line yacctab:1
 var yyExca = [...]int{
@@ -43,45 +44,45 @@ var yyExca = [...]int{
 	-2, 0,
 }
 
-const yyNprod = 7
+const yyNprod = 8
 const yyPrivate = 57344
 
 var yyTokenNames []string
 var yyStates []string
 
-const yyLast = 13
+const yyLast = 18
 
 var yyAct = [...]int{
 
-	8, 9, 5, 6, 2, 13, 12, 11, 10, 7,
-	4, 1, 3,
+	14, 9, 10, 3, 8, 5, 6, 2, 16, 15,
+	5, 6, 11, 13, 12, 7, 4, 1,
 }
 var yyPact = [...]int{
 
-	-2, -1000, 5, -1000, -1000, -1000, -1000, -7, 4, 3,
-	-1000, -1, 1, -1000,
+	1, -1000, 11, -1000, -1000, -5, -1000, -6, 6, 10,
+	9, -10, -1000, 2, -1000, 4, -1000,
 }
 var yyPgo = [...]int{
 
-	0, 12, 11, 10,
+	0, 17, 3, 16,
 }
 var yyR1 = [...]int{
 
-	0, 2, 2, 2, 1, 3, 3,
+	0, 1, 1, 1, 2, 2, 3, 3,
 }
 var yyR2 = [...]int{
 
-	0, 4, 6, 1, 1, 1, 1,
+	0, 4, 6, 1, 1, 4, 1, 1,
 }
 var yyChk = [...]int{
 
-	-1000, -2, 6, -1, -3, 4, 5, 4, 7, 8,
-	4, 4, 7, 4,
+	-1000, -1, 6, -2, -3, 4, 5, 4, 9, 7,
+	8, -2, 4, 4, 10, 7, 4,
 }
 var yyDef = [...]int{
 
-	0, -2, 0, 3, 4, 5, 6, 0, 0, 0,
-	1, 0, 0, 2,
+	0, -2, 0, 3, 4, 6, 7, 0, 0, 0,
+	0, 0, 1, 0, 5, 0, 2,
 }
 var yyTok1 = [...]int{
 
@@ -89,7 +90,7 @@ var yyTok1 = [...]int{
 	3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
 	3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
 	3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
-	3, 3, 3, 3, 8,
+	9, 10, 3, 3, 8,
 }
 var yyTok2 = [...]int{
 
@@ -438,37 +439,43 @@ yydefault:
 
 	case 1:
 		yyDollar = yyS[yypt-4 : yypt+1]
-		//line parser.go.y:21
+		//line parser.go.y:20
 		{
 			yylex.(*Lexer).e = &ForExpr{yyDollar[2].str, "", yyDollar[4].str}
 		}
 	case 2:
 		yyDollar = yyS[yypt-6 : yypt+1]
-		//line parser.go.y:25
+		//line parser.go.y:24
 		{
 			yylex.(*Lexer).e = &ForExpr{yyDollar[2].str, yyDollar[4].str, yyDollar[6].str}
 		}
 	case 3:
 		yyDollar = yyS[yypt-1 : yypt+1]
-		//line parser.go.y:29
+		//line parser.go.y:28
 		{
 			yylex.(*Lexer).e = yyDollar[1].expr
 		}
 	case 4:
 		yyDollar = yyS[yypt-1 : yypt+1]
-		//line parser.go.y:35
+		//line parser.go.y:34
 		{
 			yyVAL.expr = yyDollar[1].expr
 		}
 	case 5:
-		yyDollar = yyS[yypt-1 : yypt+1]
-		//line parser.go.y:41
+		yyDollar = yyS[yypt-4 : yypt+1]
+		//line parser.go.y:38
 		{
-			yyVAL.expr = &IdentExpr{yyDollar[1].str}
+			yyVAL.expr = &CallExpr{yyDollar[1].str, yyDollar[3].expr}
 		}
 	case 6:
 		yyDollar = yyS[yypt-1 : yypt+1]
-		//line parser.go.y:45
+		//line parser.go.y:44
+		{
+			yyVAL.expr = &IdentExpr{yyDollar[1].str}
+		}
+	case 7:
+		yyDollar = yyS[yypt-1 : yypt+1]
+		//line parser.go.y:48
 		{
 			yyVAL.expr = &LitExpr{yyDollar[1].lit}
 		}

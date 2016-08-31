@@ -46,6 +46,8 @@ var emptyElement = []string{
 	"command",
 }
 
+type Func func(interface{}) interface{}
+
 type Attr struct {
 	Name  string
 	Value string
@@ -177,6 +179,7 @@ func printNode(out io.Writer, v *vm.VM, n *Node, indent int) error {
 
 type Template struct {
 	root *Node
+	fm   map[string]Func
 }
 
 func ParseFile(name string) (*Template, error) {
@@ -366,12 +369,21 @@ func ParseFile(name string) (*Template, error) {
 	if err := scanner.Err(); err != nil {
 		return nil, err
 	}
-	return &Template{root}, nil
+	return &Template{root, nil}, nil
+}
+
+func (t *Template) FuncMap(m map[string]Func) {
+	t.fm = m
 }
 
 func (t *Template) Execute(out io.Writer, value interface{}) error {
 	v := vm.New()
 
+	if t.fm != nil {
+		for key, val := range t.fm {
+			v.Set(key, val)
+		}
+	}
 	if value != nil {
 		rv := reflect.ValueOf(value)
 		rt := rv.Type()
