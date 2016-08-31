@@ -25,11 +25,11 @@ html lang="ja"
 ### Your Code
 
 ```go
-tmpl, err := ParseFile("template.slim")
+tmpl, err := slim.ParseFile("template.slim")
 if err != nil {
 	t.Fatal(err)
 }
-err = tmpl.Execute(os.Stdout, Values{
+err = tmpl.Execute(os.Stdout, slim.Values{
 	"foo": []string{"foo", "bar", "baz"},
 })
 ```
