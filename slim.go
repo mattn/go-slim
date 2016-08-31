@@ -369,10 +369,21 @@ func ParseFile(name string) (*Template, error) {
 	return &Template{root}, nil
 }
 
-func (t *Template) Execute(out io.Writer, value map[string]interface{}) error {
+func (t *Template) Execute(out io.Writer, value interface{}) error {
 	v := vm.New()
-	for key, val := range value {
-		v.Set(key, val)
+
+	if value != nil {
+		rv := reflect.ValueOf(value)
+		rt := rv.Type()
+		if rt.Kind() == reflect.Map {
+			for _, rk := range rv.MapKeys() {
+				v.Set(rk.String(), rv.MapIndex(rk).Interface())
+			}
+		} else if rt.Kind() == reflect.Struct {
+			for i := 0; i < rt.NumField(); i++ {
+				v.Set(rt.Field(i).Name, rv.Field(i).Interface())
+			}
+		}
 	}
 	return printNode(out, v, t.root, 0)
 }

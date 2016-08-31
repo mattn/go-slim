@@ -2,11 +2,20 @@ package slim
 
 import (
 	"bytes"
+	"io/ioutil"
 	"testing"
 )
 
+func readFile(fn string) string {
+	b, err := ioutil.ReadFile(fn)
+	if err != nil {
+		panic(err)
+	}
+	return string(b)
+}
+
 func TestSimple(t *testing.T) {
-	tmpl, err := ParseFile("testdir/test1.slim")
+	tmpl, err := ParseFile("testdir/test_simple.slim")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -15,18 +24,7 @@ func TestSimple(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	expect := `<!doctype html>
-<html lang="ja">
-  <head>
-    <meta charset="UTF-8"/>
-    <title>
-    </title>
-  </head>
-  <body>
-    <p>Hello</p>
-  </body>
-</html>
-`
+	expect := readFile("testdir/test_simple.html")
 	got := buf.String()
 	if expect != got {
 		t.Fatalf("expected %v but %v", expect, got)
@@ -34,7 +32,7 @@ func TestSimple(t *testing.T) {
 }
 
 func TestValue(t *testing.T) {
-	tmpl, err := ParseFile("testdir/test2.slim")
+	tmpl, err := ParseFile("testdir/test_value.slim")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -45,18 +43,7 @@ func TestValue(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	expect := `<!doctype html>
-<html lang="ja">
-  <head>
-    <meta charset="UTF-8"/>
-    <title>
-    </title>
-  </head>
-  <body>
-    <p>bar</p>
-  </body>
-</html>
-`
+	expect := readFile("testdir/test_value.html")
 	got := buf.String()
 	if expect != got {
 		t.Fatalf("expected %v but %v", expect, got)
@@ -64,7 +51,7 @@ func TestValue(t *testing.T) {
 }
 
 func TestUnknownIdentifier(t *testing.T) {
-	tmpl, err := ParseFile("testdir/test2.slim")
+	tmpl, err := ParseFile("testdir/test_value.slim")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -89,22 +76,7 @@ func TestEach(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	expect := `<!doctype html>
-<html lang="ja">
-  <head>
-    <meta charset="UTF-8"/>
-    <title>
-    </title>
-  </head>
-  <body>
-    <ul>
-      <li>foo</li>
-      <li>bar</li>
-      <li>baz</li>
-    </ul>
-  </body>
-</html>
-`
+	expect := readFile("testdir/test_each.html")
 	got := buf.String()
 	if expect != got {
 		t.Fatalf("expected %v but %v", expect, got)
