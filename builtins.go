@@ -1,27 +1,40 @@
 package slim
 
 import (
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"
 )
 
-func Trim(s Value) (Value, error) {
-	return strings.TrimSpace(fmt.Sprint(s)), nil
+func Trim(args ...Value) (Value, error) {
+	if len(args) != 1 {
+		return nil, errors.New("trim require 1 argument")
+	}
+	return strings.TrimSpace(fmt.Sprint(args[0])), nil
 }
 
-func ToUpper(s Value) (Value, error) {
-	return strings.ToUpper(fmt.Sprint(s)), nil
+func ToUpper(args ...Value) (Value, error) {
+	if len(args) != 1 {
+		return nil, errors.New("to_upper require 1 argument")
+	}
+	return strings.ToUpper(fmt.Sprint(args[0])), nil
 }
 
-func ToLower(s Value) (Value, error) {
-	return strings.ToLower(fmt.Sprint(s)), nil
+func ToLower(args ...Value) (Value, error) {
+	if len(args) != 1 {
+		return nil, errors.New("to_lower require 1 argument")
+	}
+	return strings.ToLower(fmt.Sprint(args[0])), nil
 }
 
-func Repeat(s Value, n Value) (Value, error) {
-	i, err := strconv.ParseInt(fmt.Sprint(n), 10, 64)
+func Repeat(args ...Value) (Value, error) {
+	if len(args) != 2 {
+		return nil, errors.New("repeat require 2 arguments")
+	}
+	i, err := strconv.ParseInt(fmt.Sprint(args[1]), 10, 64)
 	if err != nil {
 		return nil, err
 	}
-	return strings.Repeat(fmt.Sprint(s), int(i)), nil
+	return strings.Repeat(fmt.Sprint(args[0]), int(i)), nil
 }

@@ -48,7 +48,7 @@ var emptyElement = []string{
 
 type Value interface{}
 
-type Func func(Value) (Value, error)
+type Func func(...Value) (Value, error)
 
 type Funcs map[string]Func
 type Values map[string]Value

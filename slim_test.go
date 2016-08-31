@@ -90,8 +90,8 @@ func TestFunc(t *testing.T) {
 		t.Fatal(err)
 	}
 	tmpl.FuncMap(Funcs{
-		"greet": func(v Value) (Value, error) {
-			return fmt.Sprintf("Hello %v", v), nil
+		"greet": func(args ...Value) (Value, error) {
+			return fmt.Sprintf("Hello %v", args[0]), nil
 		},
 	})
 	var buf bytes.Buffer
@@ -117,6 +117,7 @@ func TestBuiltins(t *testing.T) {
 		"trim":     Trim,
 		"to_upper": ToUpper,
 		"to_lower": ToLower,
+		"repeat":   Repeat,
 	})
 	var buf bytes.Buffer
 	err = tmpl.Execute(&buf, Values{
