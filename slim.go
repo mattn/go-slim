@@ -239,9 +239,14 @@ func Parse(in io.Reader) (*Template, error) {
 					break
 				}
 				switch r {
+				case '=':
+					st = sExpr
+					break break_st
+				case '|':
+					st = sText
+					break break_st
 				case '-':
 					st = sExpr
-					last = n
 					break break_st
 				case '#':
 					node.Name = "div"
