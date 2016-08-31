@@ -47,7 +47,9 @@ func (l *Lexer) Lex(v *yySymType) int {
 	case scanner.String:
 		tok = LIT
 		s := l.s.TokenText()
-		v.lit = s[1 : len(s)-1]
+		if len(s) >= 2 {
+			v.lit = s[1 : len(s)-1]
+		}
 	case scanner.EOF:
 		tok = 0
 	default:

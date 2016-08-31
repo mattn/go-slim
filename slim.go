@@ -23,6 +23,7 @@ const (
 	sAttrKey
 	sAttrValue
 	sEq
+	sText
 	sExpr
 )
 
@@ -101,25 +102,29 @@ func printNode(out io.Writer, v *vm.VM, n *Node, indent int) error {
 			out.Write([]byte(strings.Repeat(" ", indent*2) + "<!" + n.Name + " html"))
 			n.Attr = nil
 		} else {
+			if n.Name[len(n.Name)-1] == ':' {
+				n.Name = n.Name[:len(n.Name)-1]
+				if n.Name == "javascript" {
+					n.Name = "script"
+				}
+			}
 			out.Write([]byte(strings.Repeat(" ", indent*2) + "<" + n.Name))
 		}
 		if n.Id != "" {
 			out.Write([]byte(" id=\"" + n.Id + "\""))
 		}
 		if len(n.Class) > 0 {
-			out.Write([]byte(" class="))
+			out.Write([]byte(" class=\""))
 			for i, c := range n.Class {
 				if i > 0 {
 					out.Write([]byte(" "))
 				}
 				out.Write([]byte(c))
 			}
+			out.Write([]byte("\""))
 		}
 		if len(n.Attr) > 0 {
-			for i, a := range n.Attr {
-				if i > 0 {
-					out.Write([]byte(" "))
-				}
+			for _, a := range n.Attr {
 				if a.Value == "" {
 					out.Write([]byte(" " + a.Name))
 				} else {
@@ -227,22 +232,48 @@ func Parse(in io.Reader) (*Template, error) {
 		for n := 0; n < len(rs); n++ {
 			eol := n == len(rs)-1
 			r := rs[n]
+		break_st:
 			switch st {
 			case sNeutral:
 				if unicode.IsSpace(r) {
 					break
 				}
-				if r == '-' {
+				switch r {
+				case '-':
 					st = sExpr
-					break
+					last = n
+					break break_st
+				case '#':
+					node.Name = "div"
+					st = sId
+					last = n
+					break break_st
+				case '.':
+					node.Name = "div"
+					st = sClass
+					last = n
+					break break_st
 				}
+				if r > 255 {
+					node.Text = string(r)
+					st = sText
+					break break_st
+				}
+
 				st = sTag
 				tag += string(r)
+
 				if n > last {
-					node = node.NewChild()
 					last = n
+					if node.Name != "" && node.Name[len(node.Name)-1] == ':' {
+						node.Text = tag
+						st = sText
+						break break_st
+					}
+					node = node.NewChild()
 					stk = append(stk, stack{n: n, node: node})
 				} else if n == last {
+					last = n
 					cur := root
 					for cur != nil {
 						var tmp *Node
@@ -255,10 +286,15 @@ func Parse(in io.Reader) (*Template, error) {
 						}
 						cur = tmp
 					}
+					if cur.Name != "" && cur.Name[len(cur.Name)-1] == ':' {
+						node.Text = tag
+						st = sText
+						break break_st
+					}
 					node = cur.NewChild()
-					last = n
 					stk[len(stk)-1].node = node
 				} else if n < last {
+					last = n
 					node = nil
 					for i := 0; i < len(stk); i++ {
 						if stk[i].n >= n {
@@ -271,9 +307,13 @@ func Parse(in io.Reader) (*Template, error) {
 						node = root.NewChild()
 						stk = stk[:1]
 					} else {
+						if node.Name != "" && node.Name[len(node.Name)-1] == ':' {
+							node.Text = tag
+							st = sText
+							break break_st
+						}
 						node = node.NewChild()
 					}
-					last = n
 				}
 				node.Name = tag
 			case sTag:
@@ -283,14 +323,34 @@ func Parse(in io.Reader) (*Template, error) {
 					break
 				}
 				switch r {
+				case '=':
+					if tag == "" {
+						node.Name = "div"
+					} else {
+						node.Name = tag
+					}
+					st = sExpr
 				case '#':
-					node.Name = tag
+					if tag == "" {
+						node.Name = "div"
+					} else {
+						node.Name = tag
+					}
 					st = sId
 				case '.':
-					node.Name = tag
+					if tag == "" {
+						node.Name = "div"
+					} else {
+						node.Name = tag
+					}
 					st = sClass
 				default:
-					if !unicode.IsLetter(r) {
+					if tag == "" && unicode.IsLetter(r) {
+						node.Text = string(r)
+						st = sText
+						break break_st
+					}
+					if unicode.IsSpace(r) {
 						node.Name = tag
 						st = sAttrKey
 					} else {
@@ -345,9 +405,9 @@ func Parse(in io.Reader) (*Template, error) {
 				if eol {
 					aname += string(r)
 					if avalue != "" {
-						node.Attr = append(node.Attr, Attr{Name: aname, Value: ""})
+						node.Attr = append(node.Attr, Attr{Name: strings.TrimSpace(aname), Value: ""})
 					} else {
-						node.Text = aname
+						node.Text = strings.TrimSpace(aname)
 					}
 					break
 				}
@@ -359,12 +419,7 @@ func Parse(in io.Reader) (*Template, error) {
 						st = sAttrValue
 					}
 				default:
-					if !unicode.IsLetter(r) {
-						node.Attr = append(node.Attr, Attr{Name: aname, Value: ""})
-						st = sEq
-					} else {
-						aname += string(r)
-					}
+					aname += string(r)
 				}
 			case sAttrValue:
 				if eol {
@@ -373,25 +428,35 @@ func Parse(in io.Reader) (*Template, error) {
 						if avalue[0] == '"' && avalue[len(avalue)-1] == '"' {
 							avalue = avalue[1 : len(avalue)-1]
 						}
-						node.Attr = append(node.Attr, Attr{Name: aname, Value: avalue})
+						node.Attr = append(node.Attr, Attr{Name: aname, Value: strings.TrimSpace(avalue)})
 					}
 					break
 				}
-				if unicode.IsSpace(r) {
-					node.Attr = append(node.Attr, Attr{Name: aname, Value: avalue})
+				if avalue != "" && unicode.IsSpace(r) {
+					if avalue[0] == '"' {
+						if avalue[len(avalue)-1] == '"' {
+							avalue = avalue[1 : len(avalue)-1]
+						} else {
+							avalue += string(r)
+							break
+						}
+					}
+					node.Attr = append(node.Attr, Attr{Name: aname, Value: strings.TrimSpace(avalue)})
 					aname = ""
 					avalue = ""
+					st = sAttrKey
 				} else {
 					avalue += string(r)
 				}
 			case sEq:
-				if r == '=' {
+				if r != '=' && !unicode.IsSpace(r) {
+					node.Expr += string(r)
 					st = sExpr
-				} else if !unicode.IsSpace(r) {
-					return nil, errors.New("invalid token: " + l[n:])
 				}
 			case sExpr:
 				node.Expr += string(r)
+			case sText:
+				node.Text += string(r)
 			}
 		}
 	}
