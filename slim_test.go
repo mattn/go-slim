@@ -138,11 +138,6 @@ func TestOp(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	tmpl.FuncMap(Funcs{
-		"trim":     Trim,
-		"to_upper": ToUpper,
-		"to_lower": ToLower,
-	})
 	var buf bytes.Buffer
 	err = tmpl.Execute(&buf, Values{
 		"name": "golang",

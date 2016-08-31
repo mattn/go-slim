@@ -17,7 +17,7 @@ type state int
 
 const (
 	sNeutral state = iota
-	sName
+	sTag
 	sId
 	sClass
 	sAttrKey
@@ -63,6 +63,7 @@ type Node struct {
 	Id       string
 	Class    []string
 	Attr     []Attr
+	Text     string
 	Expr     string
 	Children []*Node
 }
@@ -165,6 +166,7 @@ func printNode(out io.Writer, v *vm.VM, n *Node, indent int) error {
 					out.Write([]byte(fmt.Sprint(r)))
 					cr = false
 				}
+				out.Write([]byte(n.Text))
 			} else if len(n.Children) > 0 {
 				out.Write([]byte("\n"))
 				for _, c := range n.Children {
@@ -172,6 +174,10 @@ func printNode(out io.Writer, v *vm.VM, n *Node, indent int) error {
 						return err
 					}
 				}
+				out.Write([]byte(n.Text))
+			} else if n.Text != "" {
+				out.Write([]byte(n.Text))
+				cr = false
 			} else if cr {
 				out.Write([]byte("\n"))
 			}
@@ -216,8 +222,8 @@ func Parse(in io.Reader) (*Template, error) {
 		tag := ""
 		id := ""
 		class := ""
-		name := ""
-		value := ""
+		aname := ""
+		avalue := ""
 		for n := 0; n < len(rs); n++ {
 			eol := n == len(rs)-1
 			r := rs[n]
@@ -230,7 +236,7 @@ func Parse(in io.Reader) (*Template, error) {
 					st = sExpr
 					break
 				}
-				st = sName
+				st = sTag
 				tag += string(r)
 				if n > last {
 					node = node.NewChild()
@@ -270,7 +276,7 @@ func Parse(in io.Reader) (*Template, error) {
 					last = n
 				}
 				node.Name = tag
-			case sName:
+			case sTag:
 				if eol {
 					tag += string(r)
 					node.Name = tag
@@ -337,44 +343,46 @@ func Parse(in io.Reader) (*Template, error) {
 				}
 			case sAttrKey:
 				if eol {
-					if !unicode.IsSpace(r) {
-						name += string(r)
-						node.Attr = append(node.Attr, Attr{Name: name, Value: ""})
+					aname += string(r)
+					if avalue != "" {
+						node.Attr = append(node.Attr, Attr{Name: aname, Value: ""})
+					} else {
+						node.Text = aname
 					}
 					break
 				}
 				switch r {
 				case '=':
-					if name == "" {
+					if aname == "" {
 						st = sExpr
 					} else {
 						st = sAttrValue
 					}
 				default:
 					if !unicode.IsLetter(r) {
-						node.Attr = append(node.Attr, Attr{Name: name, Value: ""})
+						node.Attr = append(node.Attr, Attr{Name: aname, Value: ""})
 						st = sEq
 					} else {
-						name += string(r)
+						aname += string(r)
 					}
 				}
 			case sAttrValue:
 				if eol {
 					if unicode.IsLetter(r) || r == '"' {
-						value += string(r)
-						if value[0] == '"' && value[len(value)-1] == '"' {
-							value = value[1 : len(value)-1]
+						avalue += string(r)
+						if avalue[0] == '"' && avalue[len(avalue)-1] == '"' {
+							avalue = avalue[1 : len(avalue)-1]
 						}
-						node.Attr = append(node.Attr, Attr{Name: name, Value: value})
+						node.Attr = append(node.Attr, Attr{Name: aname, Value: avalue})
 					}
 					break
 				}
 				if unicode.IsSpace(r) {
-					node.Attr = append(node.Attr, Attr{Name: name, Value: value})
-					name = ""
-					value = ""
+					node.Attr = append(node.Attr, Attr{Name: aname, Value: avalue})
+					aname = ""
+					avalue = ""
 				} else {
-					value += string(r)
+					avalue += string(r)
 				}
 			case sEq:
 				if r == '=' {
