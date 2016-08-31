@@ -66,6 +66,12 @@ type Node struct {
 	Expr     string
 	Children []*Node
 }
+
+func (n *Node) NewChild() *Node {
+	n.Children = append(n.Children, new(Node))
+	return n.Children[len(n.Children)-1]
+}
+
 type stack struct {
 	n    int
 	node *Node
@@ -202,7 +208,7 @@ func Parse(in io.Reader) (*Template, error) {
 	root := new(Node)
 	node := root
 	stk := []stack{}
-	last := 0
+	last := -1
 	for scanner.Scan() {
 		l := scanner.Text()
 		rs := []rune(l)
@@ -217,46 +223,52 @@ func Parse(in io.Reader) (*Template, error) {
 			r := rs[n]
 			switch st {
 			case sNeutral:
+				if unicode.IsSpace(r) {
+					break
+				}
 				if r == '-' {
 					st = sExpr
-				} else if !unicode.IsSpace(r) {
-					st = sName
-					tag += string(r)
-					if n > last {
-						node.Children = append(node.Children, new(Node))
-						node = node.Children[len(node.Children)-1]
-						stk = append(stk, stack{n: n, node: node})
-						last = n
-						if eol {
-							node.Name = tag
+					break
+				}
+				st = sName
+				tag += string(r)
+				if n > last {
+					node = node.NewChild()
+					last = n
+					stk = append(stk, stack{n: n, node: node})
+				} else if n == last {
+					cur := root
+					for cur != nil {
+						var tmp *Node
+						if len(cur.Children) == 0 {
+							break
 						}
-					} else if n <= last {
-						node = nil
-						for i := len(stk) - 1; i >= 0; i-- {
-							if stk[i].n < last {
-								last = n
-								node = stk[i].node
-								stk = stk[:i]
-								break
-							}
+						tmp = cur.Children[len(cur.Children)-1]
+						if tmp == nil || tmp == node {
+							break
 						}
-						if node == nil {
-							if n == 0 {
-								root.Children = append(root.Children, new(Node))
-								node = root.Children[len(root.Children)-1]
-							} else {
-								node = root.Children[len(root.Children)-1]
-								node.Children = append(node.Children, new(Node))
-								node = node.Children[len(node.Children)-1]
-							}
-							stk = stk[:0]
-							last = 0
-						} else {
-							node.Children = append(node.Children, new(Node))
-							node = node.Children[len(node.Children)-1]
+						cur = tmp
+					}
+					node = cur.NewChild()
+					last = n
+				} else if n < last {
+					node = nil
+					for i := 0; i < len(stk)-1; i++ {
+						if stk[i+1].n >= n {
+							node = stk[i].node
+							stk = stk[:i+1]
+							break
 						}
 					}
+					if node == nil {
+						node = root.NewChild()
+						stk = stk[:1]
+					} else {
+						node = node.NewChild()
+					}
+					last = n
 				}
+				node.Name = tag
 			case sName:
 				if eol {
 					tag += string(r)
