@@ -89,6 +89,29 @@ func isEmptyElement(n string) bool {
 	return false
 }
 
+var rubyInlinePattern = regexp.MustCompile(`#{[^}]*}`)
+
+func rubyInline(v *vm.VM, s string) (string, error) {
+	var fail error
+	text := rubyInlinePattern.ReplaceAllStringFunc(s, func(s string) string {
+		expr, err := v.Compile(s[2 : len(s)-1])
+		if err != nil {
+			fail = err
+			return ""
+		}
+		iv, err := v.Eval(expr)
+		if err != nil {
+			fail = err
+			return ""
+		}
+		return fmt.Sprint(iv)
+	})
+	if fail != nil {
+		return "", fail
+	}
+	return text, nil
+}
+
 func printNode(out io.Writer, v *vm.VM, n *Node, indent int) error {
 	if n.Name == "" {
 		for _, c := range n.Children {
@@ -129,7 +152,11 @@ func printNode(out io.Writer, v *vm.VM, n *Node, indent int) error {
 				if a.Value == "" {
 					out.Write([]byte(" " + a.Name))
 				} else {
-					fmt.Fprintf(out, " %s=%q", a.Name, a.Value)
+					value, err := rubyInline(v, a.Value)
+					if err != nil {
+						return err
+					}
+					fmt.Fprintf(out, " %s=%q", a.Name, value)
 				}
 			}
 		}
@@ -172,23 +199,9 @@ func printNode(out io.Writer, v *vm.VM, n *Node, indent int) error {
 					out.Write([]byte(fmt.Sprint(r)))
 					cr = false
 				}
-				text := n.Text
-				var fail error
-				text = regexp.MustCompile(`#{[^}]*}`).ReplaceAllStringFunc(text, func(s string) string {
-					expr, err := v.Compile(s[2 : len(s)-1])
-					if err != nil {
-						fail = err
-						return ""
-					}
-					iv, err := v.Eval(expr)
-					if err != nil {
-						fail = err
-						return ""
-					}
-					return fmt.Sprint(iv)
-				})
-				if fail != nil {
-					return fail
+				text, err := rubyInline(v, n.Text)
+				if err != nil {
+					return err
 				}
 				out.Write([]byte(text))
 			} else if len(n.Children) > 0 {
@@ -198,43 +211,15 @@ func printNode(out io.Writer, v *vm.VM, n *Node, indent int) error {
 						return err
 					}
 				}
-				text := n.Text
-				var fail error
-				text = regexp.MustCompile(`#{[^}]*}`).ReplaceAllStringFunc(text, func(s string) string {
-					expr, err := v.Compile(s[2 : len(s)-1])
-					if err != nil {
-						fail = err
-						return ""
-					}
-					iv, err := v.Eval(expr)
-					if err != nil {
-						fail = err
-						return ""
-					}
-					return fmt.Sprint(iv)
-				})
-				if fail != nil {
-					return fail
+				text, err := rubyInline(v, n.Text)
+				if err != nil {
+					return err
 				}
 				out.Write([]byte(text))
 			} else if n.Text != "" {
-				text := n.Text
-				var fail error
-				text = regexp.MustCompile(`#{[^}]*}`).ReplaceAllStringFunc(text, func(s string) string {
-					expr, err := v.Compile(s[2 : len(s)-1])
-					if err != nil {
-						fail = err
-						return ""
-					}
-					iv, err := v.Eval(expr)
-					if err != nil {
-						fail = err
-						return ""
-					}
-					return fmt.Sprint(iv)
-				})
-				if fail != nil {
-					return fail
+				text, err := rubyInline(v, n.Text)
+				if err != nil {
+					return err
 				}
 				out.Write([]byte(text))
 				cr = false

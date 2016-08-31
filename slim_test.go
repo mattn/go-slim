@@ -151,3 +151,22 @@ func TestOp(t *testing.T) {
 		t.Fatalf("expected %v but %v", expect, got)
 	}
 }
+
+func TestInline(t *testing.T) {
+	tmpl, err := ParseFile("testdir/test_inline.slim")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var buf bytes.Buffer
+	err = tmpl.Execute(&buf, Values{
+		"name": "golang",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	expect := readFile("testdir/test_inline.html")
+	got := buf.String()
+	if expect != got {
+		t.Fatalf("expected %v but %v", expect, got)
+	}
+}
