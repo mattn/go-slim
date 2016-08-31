@@ -184,7 +184,12 @@ func printNode(out io.Writer, v *vm.VM, n *Node, indent int) error {
 					l := ra.Len()
 					for i := 0; i < l; i++ {
 						x := ra.Index(i).Interface()
-						v.Set(fe.Lhs1, x)
+						if fe.Lhs2 != "" {
+							v.Set(fe.Lhs1, i)
+							v.Set(fe.Lhs2, x)
+						} else {
+							v.Set(fe.Lhs1, x)
+						}
 						for _, c := range n.Children {
 							if err := printNode(out, v, c, indent+1); err != nil {
 								return err
