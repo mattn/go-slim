@@ -7,6 +7,7 @@ import (
 	"io"
 	"os"
 	"reflect"
+	"regexp"
 	"strings"
 	"unicode"
 
@@ -171,7 +172,25 @@ func printNode(out io.Writer, v *vm.VM, n *Node, indent int) error {
 					out.Write([]byte(fmt.Sprint(r)))
 					cr = false
 				}
-				out.Write([]byte(n.Text))
+				text := n.Text
+				var fail error
+				text = regexp.MustCompile(`#{[^}]*}`).ReplaceAllStringFunc(text, func(s string) string {
+					expr, err := v.Compile(s[2 : len(s)-1])
+					if err != nil {
+						fail = err
+						return ""
+					}
+					iv, err := v.Eval(expr)
+					if err != nil {
+						fail = err
+						return ""
+					}
+					return fmt.Sprint(iv)
+				})
+				if fail != nil {
+					return fail
+				}
+				out.Write([]byte(text))
 			} else if len(n.Children) > 0 {
 				out.Write([]byte("\n"))
 				for _, c := range n.Children {
@@ -179,9 +198,45 @@ func printNode(out io.Writer, v *vm.VM, n *Node, indent int) error {
 						return err
 					}
 				}
-				out.Write([]byte(n.Text))
+				text := n.Text
+				var fail error
+				text = regexp.MustCompile(`#{[^}]*}`).ReplaceAllStringFunc(text, func(s string) string {
+					expr, err := v.Compile(s[2 : len(s)-1])
+					if err != nil {
+						fail = err
+						return ""
+					}
+					iv, err := v.Eval(expr)
+					if err != nil {
+						fail = err
+						return ""
+					}
+					return fmt.Sprint(iv)
+				})
+				if fail != nil {
+					return fail
+				}
+				out.Write([]byte(text))
 			} else if n.Text != "" {
-				out.Write([]byte(n.Text))
+				text := n.Text
+				var fail error
+				text = regexp.MustCompile(`#{[^}]*}`).ReplaceAllStringFunc(text, func(s string) string {
+					expr, err := v.Compile(s[2 : len(s)-1])
+					if err != nil {
+						fail = err
+						return ""
+					}
+					iv, err := v.Eval(expr)
+					if err != nil {
+						fail = err
+						return ""
+					}
+					return fmt.Sprint(iv)
+				})
+				if fail != nil {
+					return fail
+				}
+				out.Write([]byte(text))
 				cr = false
 			} else if cr {
 				out.Write([]byte("\n"))
