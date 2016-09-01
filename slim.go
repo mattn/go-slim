@@ -329,7 +329,7 @@ func Parse(in io.Reader) (*Template, error) {
 					break break_st
 				}
 				if r > 255 {
-					node.Text = string(r)
+					node.Text += string(r)
 					st = sText
 					break break_st
 				}
