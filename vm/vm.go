@@ -114,6 +114,42 @@ func (v *VM) Eval(expr Expr) (interface{}, error) {
 			return vals[0], nil
 		}
 		return nil, errors.New("invalid token: " + t.Name)
+	case *MemberExpr:
+		lhs, err := v.Eval(t.Lhs)
+		if err != nil {
+			return nil, err
+		}
+		rv := reflect.ValueOf(lhs)
+
+	deref:
+		for {
+			switch rv.Kind() {
+			case reflect.Interface, reflect.Ptr:
+				rv = rv.Elem()
+			default:
+				break deref
+			}
+		}
+
+		if !rv.IsValid() {
+			return nil, errors.New("cannot reference member")
+		}
+
+		if rv.Kind() == reflect.Struct {
+			rv = rv.FieldByName(t.Name)
+			if !rv.IsValid() {
+				return nil, errors.New("cannot reference member")
+			}
+			return rv.Interface(), nil
+		} else if rv.Kind() == reflect.Map {
+			rv = rv.MapIndex(reflect.ValueOf(t.Name))
+			if !rv.IsValid() {
+				return nil, errors.New("cannot reference member")
+			}
+			return rv.Interface(), nil
+		}
+		return nil, errors.New("cannot reference member")
+
 	}
 	return nil, nil
 }

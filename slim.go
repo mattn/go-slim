@@ -113,7 +113,7 @@ func rubyInline(v *vm.VM, s string) (string, error) {
 }
 
 func printNode(out io.Writer, v *vm.VM, n *Node, indent int) error {
-	if n.Name == "" {
+	if n.Name == "" && n.Expr == "" {
 		for _, c := range n.Children {
 			if err := printNode(out, v, c, indent); err != nil {
 				return err
@@ -125,7 +125,7 @@ func printNode(out io.Writer, v *vm.VM, n *Node, indent int) error {
 		if doctype {
 			out.Write([]byte(strings.Repeat(" ", indent*2) + "<!" + n.Name + " html"))
 			n.Attr = nil
-		} else {
+		} else if n.Name != "" {
 			if n.Name[len(n.Name)-1] == ':' {
 				n.Name = n.Name[:len(n.Name)-1]
 				if n.Name == "javascript" {
@@ -161,7 +161,9 @@ func printNode(out io.Writer, v *vm.VM, n *Node, indent int) error {
 			}
 		}
 		if !isEmptyElement(n.Name) {
-			out.Write([]byte(">"))
+			if n.Name != "" {
+				out.Write([]byte(">"))
+			}
 			cr := true
 			if n.Expr != "" {
 				expr, err := v.Compile(n.Expr)
@@ -170,18 +172,21 @@ func printNode(out io.Writer, v *vm.VM, n *Node, indent int) error {
 				}
 				fe, ok := expr.(*vm.ForExpr)
 				if ok {
-					rhs, ok := v.Get(fe.Rhs)
-					if !ok {
-						return errors.New("invalid token: " + fe.Rhs)
+					rhs, err := v.Eval(fe.Rhs)
+					if err != nil {
+						return err
 					}
 					ra := reflect.ValueOf(rhs)
 					typ := ra.Type().Kind()
 					switch typ {
 					case reflect.Array, reflect.Slice, reflect.Chan:
 					default:
-						return errors.New("can't iterate: " + fe.Rhs)
+						println(typ)
+						return errors.New("can't iterate: " + n.Expr)
 					}
-					out.Write([]byte("\n"))
+					if n.Name != "" {
+						out.Write([]byte("\n"))
+					}
 					if typ == reflect.Chan {
 						i := 0
 						for {
@@ -198,7 +203,7 @@ func printNode(out io.Writer, v *vm.VM, n *Node, indent int) error {
 								v.Set(fe.Lhs1, x)
 							}
 							for _, c := range n.Children {
-								if err := printNode(out, v, c, indent+1); err != nil {
+								if err := printNode(out, v, c, indent); err != nil {
 									return err
 								}
 							}
@@ -214,7 +219,7 @@ func printNode(out io.Writer, v *vm.VM, n *Node, indent int) error {
 								v.Set(fe.Lhs1, x)
 							}
 							for _, c := range n.Children {
-								if err := printNode(out, v, c, indent+1); err != nil {
+								if err := printNode(out, v, c, indent); err != nil {
 									return err
 								}
 							}
@@ -255,10 +260,12 @@ func printNode(out io.Writer, v *vm.VM, n *Node, indent int) error {
 			} else if cr {
 				out.Write([]byte("\n"))
 			}
-			if cr {
-				out.Write([]byte(strings.Repeat(" ", indent*2)))
+			if n.Name != "" {
+				if cr {
+					out.Write([]byte(strings.Repeat(" ", indent*2)))
+				}
+				out.Write([]byte("</" + n.Name + ">\n"))
 			}
-			out.Write([]byte("</" + n.Name + ">\n"))
 		} else if doctype {
 			out.Write([]byte(">\n"))
 		} else {
@@ -307,33 +314,6 @@ func Parse(in io.Reader) (*Template, error) {
 				if unicode.IsSpace(r) {
 					break
 				}
-				switch r {
-				case '=':
-					st = sExpr
-					break break_st
-				case '|':
-					st = sText
-					break break_st
-				case '-':
-					st = sExpr
-					break break_st
-				case '#':
-					node.Name = "div"
-					st = sId
-					last = n
-					break break_st
-				case '.':
-					node.Name = "div"
-					st = sClass
-					last = n
-					break break_st
-				}
-				if r > 255 {
-					node.Text += string(r)
-					st = sText
-					break break_st
-				}
-
 				st = sTag
 				tag += string(r)
 
@@ -389,6 +369,31 @@ func Parse(in io.Reader) (*Template, error) {
 						node = node.NewChild()
 					}
 				}
+				switch r {
+				case '=':
+					st = sExpr
+					break break_st
+				case '|':
+					st = sText
+					break break_st
+				case '-':
+					st = sExpr
+					break break_st
+				case '#':
+					node.Name = "div"
+					st = sId
+					break break_st
+				case '.':
+					node.Name = "div"
+					st = sClass
+					break break_st
+				}
+				if r > 255 {
+					node.Text += string(r)
+					st = sText
+					break break_st
+				}
+
 				node.Name = tag
 			case sTag:
 				if eol {

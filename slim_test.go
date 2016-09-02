@@ -198,3 +198,38 @@ func TestInline(t *testing.T) {
 		t.Fatalf("expected %v but %v", expect, got)
 	}
 }
+
+func TestMember(t *testing.T) {
+	tmpl, err := ParseFile("testdir/test_member.slim")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	m := make(map[string]string)
+	m["baz"] = "Baz!"
+
+	type Baz struct {
+		Fuga string
+	}
+	var buf bytes.Buffer
+	err = tmpl.Execute(&buf, Values{
+		"foo": struct {
+			Baz []Baz
+		}{
+			Baz: []Baz{
+				{Fuga: "hello"},
+				{Fuga: "world"},
+				{Fuga: "golang"},
+			},
+		},
+		"bar": m,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	expect := readFile("testdir/test_member.html")
+	got := buf.String()
+	if expect != got {
+		t.Fatalf("expected %v but %v", expect, got)
+	}
+}

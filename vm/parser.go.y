@@ -11,18 +11,17 @@ package vm
 
 %type<expr> stmt
 %type<expr> expr
-%type<expr> value
 %type<exprs> exprs
 %token<str> IDENT
 %token<lit> LIT FOR IN
 
 %%
 
-stmt :  FOR IDENT IN IDENT
+stmt :  FOR IDENT IN expr
      {
        yylex.(*Lexer).e = &ForExpr{$2, "", $4}
      }
-     | FOR IDENT ',' IDENT IN IDENT
+     | FOR IDENT ',' IDENT IN expr
      {
        yylex.(*Lexer).e = &ForExpr{$2, $4, $6}
      }
@@ -46,9 +45,9 @@ exprs :
       }
       ;
 
-expr : value
+expr : LIT
      {
-       $$ = $1
+       $$ = &LitExpr{$1}
      }
      | '(' expr ')'
      {
@@ -74,17 +73,16 @@ expr : value
      {
        $$ = &CallExpr{$1, $3}
      }
+     | expr '.' IDENT
+     {
+       $$ = &MemberExpr{Lhs: $1, Name: $3}
+     }
+     | IDENT
+     {
+       $$ = &IdentExpr{$1}
+     }
      ;
 
-value : IDENT
-      {
-        $$ = &IdentExpr{$1}
-      }
-      | LIT
-      {
-        $$ = &LitExpr{$1}
-      }
-      ;
 %%
 
 /* vim: set et sw=2: */
