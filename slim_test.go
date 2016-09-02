@@ -261,7 +261,9 @@ func TestItem(t *testing.T) {
 
 	var buf bytes.Buffer
 	err = tmpl.Execute(&buf, Values{
-		"foo": []int{1, 2},
+		"foo": []interface{}{1, struct {
+			Bar []int
+		}{[]int{2}}},
 	})
 	if err != nil {
 		t.Fatal(err)
