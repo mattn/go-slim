@@ -6,6 +6,16 @@
 
 slim template engine for golang
 
+## Features
+
+* Small Virtual Machine
+
+  Enough to manipulate object in template. Support Number/String/Function/Array/Map.
+
+* Ruby Like Text Rendering
+
+  Support `Hello #{"Golang"}`
+
 ## Usage
 
 ### Template File
