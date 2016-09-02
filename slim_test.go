@@ -161,6 +161,25 @@ func TestBuiltins(t *testing.T) {
 	}
 }
 
+func TestBuiltinsError(t *testing.T) {
+	_, err := Trim("foo", "bar")
+	if err == nil {
+		t.Fatal("should be fail")
+	}
+	_, err = ToUpper("foo", "bar")
+	if err == nil {
+		t.Fatal("should be fail")
+	}
+	_, err = ToLower("foo", "bar")
+	if err == nil {
+		t.Fatal("should be fail")
+	}
+	_, err = Repeat("foo", "bar", "baz")
+	if err == nil {
+		t.Fatal("should be fail")
+	}
+}
+
 func TestOp(t *testing.T) {
 	tmpl, err := ParseFile("testdir/test_op.slim")
 	if err != nil {
