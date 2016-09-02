@@ -77,6 +77,10 @@ expr : LIT
      {
        $$ = &MemberExpr{Lhs: $1, Name: $3}
      }
+     | expr '[' expr ']'
+     {
+       $$ = &ItemExpr{Lhs: $1, Index: $3}
+     }
      | IDENT
      {
        $$ = &IdentExpr{$1}

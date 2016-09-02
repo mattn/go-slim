@@ -51,36 +51,44 @@ func (v *VM) Eval(expr Expr) (interface{}, error) {
 				return vt + fmt.Sprint(rhs), nil
 			}
 			return nil, errors.New("unknown operator")
-		case int64:
-			i, err := strconv.ParseInt(fmt.Sprint(rhs), 10, 64)
+		case int, int32, int64:
+			li, err := strconv.ParseInt(fmt.Sprint(lhs), 10, 64)
+			if err != nil {
+				return nil, err
+			}
+			ri, err := strconv.ParseInt(fmt.Sprint(rhs), 10, 64)
 			if err != nil {
 				return nil, err
 			}
 			switch t.Op {
 			case "+":
-				return vt + i, nil
+				return li + ri, nil
 			case "-":
-				return vt - i, nil
+				return li - ri, nil
 			case "*":
-				return vt * i, nil
+				return li * ri, nil
 			case "/":
-				return vt / i, nil
+				return li / ri, nil
 			}
 			return nil, errors.New("unknown operator")
-		case float64:
-			f, err := strconv.ParseFloat(fmt.Sprint(rhs), 64)
+		case float32, float64:
+			lf, err := strconv.ParseFloat(fmt.Sprint(lhs), 64)
+			if err != nil {
+				return nil, err
+			}
+			rf, err := strconv.ParseFloat(fmt.Sprint(rhs), 64)
 			if err != nil {
 				return nil, err
 			}
 			switch t.Op {
 			case "+":
-				return vt + f, nil
+				return lf + rf, nil
 			case "-":
-				return vt - f, nil
+				return lf - rf, nil
 			case "*":
-				return vt * f, nil
+				return lf * rf, nil
 			case "/":
-				return vt / f, nil
+				return lf / rf, nil
 			}
 			return nil, errors.New("unknown operator")
 		default:
@@ -114,6 +122,52 @@ func (v *VM) Eval(expr Expr) (interface{}, error) {
 			return vals[0], nil
 		}
 		return nil, errors.New("invalid token: " + t.Name)
+	case *ItemExpr:
+		lhs, err := v.Eval(t.Lhs)
+		if err != nil {
+			return nil, err
+		}
+		rv := reflect.ValueOf(lhs)
+
+	deref_item:
+		for {
+			switch rv.Kind() {
+			case reflect.Interface, reflect.Ptr:
+				rv = rv.Elem()
+			default:
+				break deref_item
+			}
+		}
+
+		if !rv.IsValid() {
+			return nil, errors.New("cannot reference item")
+		}
+
+		rhs, err := v.Eval(t.Index)
+		if err != nil {
+			return nil, err
+		}
+
+		if rv.Kind() == reflect.Struct {
+			rv = rv.FieldByName(fmt.Sprint(rhs))
+			if !rv.IsValid() {
+				return nil, errors.New("cannot reference item")
+			}
+			return rv.Interface(), nil
+		} else if rv.Kind() == reflect.Map {
+			rv = rv.MapIndex(reflect.ValueOf(fmt.Sprint(rhs)))
+			if !rv.IsValid() {
+				return nil, errors.New("cannot reference item")
+			}
+			return rv.Interface(), nil
+		} else if rv.Kind() == reflect.Slice && reflect.TypeOf(rhs).Kind() == reflect.Int64 {
+			rv = rv.Index(int(rhs.(int64)))
+			if !rv.IsValid() {
+				return nil, errors.New("cannot reference item")
+			}
+			return rv.Interface(), nil
+		}
+		return nil, errors.New("cannot reference item")
 	case *MemberExpr:
 		lhs, err := v.Eval(t.Lhs)
 		if err != nil {
@@ -121,13 +175,13 @@ func (v *VM) Eval(expr Expr) (interface{}, error) {
 		}
 		rv := reflect.ValueOf(lhs)
 
-	deref:
+	deref_member:
 		for {
 			switch rv.Kind() {
 			case reflect.Interface, reflect.Ptr:
 				rv = rv.Elem()
 			default:
-				break deref
+				break deref_member
 			}
 		}
 

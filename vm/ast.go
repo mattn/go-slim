@@ -32,3 +32,8 @@ type MemberExpr struct {
 	Lhs  Expr
 	Name string
 }
+
+type ItemExpr struct {
+	Lhs   Expr
+	Index Expr
+}
