@@ -59,7 +59,7 @@ err = tmpl.Execute(os.Stdout, slim.Values{
 * trim(s)
 * to_upper(s)
 * to_lower(s)
-* repeat(s)
+* repeat(s, n)
 
 ## License
 
