@@ -371,6 +371,7 @@ func Parse(in io.Reader) (*Template, error) {
 				}
 				switch r {
 				case '=':
+					node.Name = "div"
 					st = sExpr
 					break break_st
 				case '|':
