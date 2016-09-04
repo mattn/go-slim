@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"os"
 	"strings"
@@ -16,10 +17,12 @@ func fatalIf(err error) {
 }
 
 func main() {
+	flag.Parse()
+
 	t, err := slim.Parse(os.Stdin)
 	fatalIf(err)
 	m := make(map[string]interface{})
-	for _, arg := range os.Args[1:] {
+	for _, arg := range flag.Args() {
 		token := strings.SplitN(arg, "=", 2)
 		if len(token) == 2 {
 			if v, ok := m[token[0]]; ok {
