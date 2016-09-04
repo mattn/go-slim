@@ -25,6 +25,7 @@ const (
 	sAttrValue
 	sEq
 	sText
+	sComment
 	sExpr
 )
 
@@ -119,6 +120,10 @@ func printNode(out io.Writer, v *vm.VM, n *Node, indent int) error {
 				return err
 			}
 		}
+	} else if n.Name == "/" {
+		return nil
+	} else if n.Name == "/!" {
+		out.Write([]byte(strings.Repeat(" ", indent*2) + "<!-- " + n.Text + " -->\n"))
 	} else {
 		// FIXME
 		doctype := n.Name == "doctype"
