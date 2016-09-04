@@ -7,6 +7,7 @@ import (
 	"strings"
 )
 
+// Trim is builtin function provide trim(s).
 func Trim(args ...Value) (Value, error) {
 	if len(args) != 1 {
 		return nil, errors.New("trim require 1 argument")
@@ -14,6 +15,7 @@ func Trim(args ...Value) (Value, error) {
 	return strings.TrimSpace(fmt.Sprint(args[0])), nil
 }
 
+// ToUpper is builtin function provide to_upper(s).
 func ToUpper(args ...Value) (Value, error) {
 	if len(args) != 1 {
 		return nil, errors.New("to_upper require 1 argument")
@@ -21,6 +23,7 @@ func ToUpper(args ...Value) (Value, error) {
 	return strings.ToUpper(fmt.Sprint(args[0])), nil
 }
 
+// ToLower is builtin function provide to_lower(s).
 func ToLower(args ...Value) (Value, error) {
 	if len(args) != 1 {
 		return nil, errors.New("to_lower require 1 argument")
@@ -28,6 +31,7 @@ func ToLower(args ...Value) (Value, error) {
 	return strings.ToLower(fmt.Sprint(args[0])), nil
 }
 
+// Repeat is builtin function provide repeat(s, n).
 func Repeat(args ...Value) (Value, error) {
 	if len(args) != 2 {
 		return nil, errors.New("repeat require 2 arguments")
