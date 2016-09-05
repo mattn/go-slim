@@ -129,15 +129,16 @@ func printNode(out io.Writer, v *vm.VM, n *Node, indent int) error {
 		doctype := n.Name == "doctype"
 		if doctype {
 			out.Write([]byte(strings.Repeat(" ", indent*2) + "<!" + n.Name + " html"))
-			n.Attr = nil
 		} else if n.Name != "" {
 			if n.Name[len(n.Name)-1] == ':' {
-				n.Name = n.Name[:len(n.Name)-1]
-				if n.Name == "javascript" {
-					n.Name = "script"
+				name := n.Name[:len(n.Name)-1]
+				if name == "javascript" {
+					name = "script"
 				}
+				out.Write([]byte(strings.Repeat(" ", indent*2) + "<" + name))
+			} else {
+				out.Write([]byte(strings.Repeat(" ", indent*2) + "<" + n.Name))
 			}
-			out.Write([]byte(strings.Repeat(" ", indent*2) + "<" + n.Name))
 		}
 		if n.Id != "" {
 			out.Write([]byte(" id=\"" + n.Id + "\""))
@@ -152,7 +153,7 @@ func printNode(out io.Writer, v *vm.VM, n *Node, indent int) error {
 			}
 			out.Write([]byte("\""))
 		}
-		if len(n.Attr) > 0 {
+		if len(n.Attr) > 0 && !doctype {
 			for _, a := range n.Attr {
 				if a.Value == "" {
 					out.Write([]byte(" " + a.Name))
