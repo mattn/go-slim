@@ -39,24 +39,25 @@ var DOUBLE_QUOTE []byte = []byte ("\"")
 var GREATER_THAN []byte = []byte (">")
 var LESS_THAN []byte = []byte ("<")
 
-var emptyElement = []string{
-	"doctype",
-	"area",
-	"base",
-	"basefont",
-	"br",
-	"col",
-	"frame",
-	"hr",
-	"img",
-	"input",
-	"isindex",
-	"link",
-	"meta",
-	"param",
-	"embed",
-	"keygen",
-	"command",
+type Empty struct {}
+var emptyElement = map[string]struct{}{
+	"doctype":Empty{},
+	"area":Empty{},
+	"base":Empty{},
+	"basefont":Empty{},
+	"br":Empty{},
+	"col":Empty{},
+	"frame":Empty{},
+	"hr":Empty{},
+	"img":Empty{},
+	"input":Empty{},
+	"isindex":Empty{},
+	"link":Empty{},
+	"meta":Empty{},
+	"param":Empty{},
+	"embed":Empty{},
+	"keygen":Empty{},
+	"command":Empty{},
 }
 
 type Value interface{}
@@ -92,12 +93,8 @@ type stack struct {
 }
 
 func isEmptyElement(n string) bool {
-	for _, e := range emptyElement {
-		if e == n {
-			return true
-		}
-	}
-	return false
+	_, ok := emptyElement[n]
+	return ok
 }
 
 var rubyInlinePattern = regexp.MustCompile(`#{[^}]*}`)
