@@ -32,6 +32,27 @@ func TestSimple(t *testing.T) {
 	}
 }
 
+func BenchmarkTemplate_Execute(b *testing.B) {
+	b.StopTimer()
+
+	tmpl, err := ParseFile("testdir/test_simple.slim")
+	if err != nil {
+		b.Fatal(err)
+	}
+	var buf bytes.Buffer
+	// Increase the initial buffer size impacts the number of malloc
+	//buf.Grow(2048)
+
+	b.StartTimer()
+	for i := 0; i < b.N; i++ {
+		buf.Reset()
+		err = tmpl.Execute(&buf, nil)
+		if err != nil {
+			b.Fatal(err)
+		}
+	}
+}
+
 func TestValue(t *testing.T) {
 	tmpl, err := ParseFile("testdir/test_value.slim")
 	if err != nil {
