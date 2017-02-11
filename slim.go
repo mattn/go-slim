@@ -150,17 +150,15 @@ func printNode(out io.Writer, v *vm.VM, n *Node, indent int) error {
 			out.Write([]byte(n.Name))
 			out.Write([]byte(" html"))
 		} else if n.Name != "" {
+			bytesRepeat(out, SPACE, indent*2)
+			out.Write(LESS_THAN)
 			if n.Name[len(n.Name)-1] == ':' {
 				name := n.Name[:len(n.Name)-1]
 				if name == "javascript" {
 					name = "script"
 				}
-				bytesRepeat(out, SPACE, indent*2)
-				out.Write(LESS_THAN)
 				out.Write([]byte(name))
 			} else {
-				bytesRepeat(out, SPACE, indent*2)
-				out.Write(LESS_THAN)
 				out.Write([]byte(n.Name))
 			}
 		}
@@ -263,7 +261,7 @@ func printNode(out io.Writer, v *vm.VM, n *Node, indent int) error {
 					if err != nil {
 						return err
 					}
-					out.Write([]byte(fmt.Sprint(r)))
+					fmt.Fprint(out, r)
 					cr = false
 				}
 				text, err := rubyInline(v, n.Text)
