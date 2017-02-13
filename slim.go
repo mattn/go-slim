@@ -29,24 +29,35 @@ const (
 	sExpr
 )
 
-var emptyElement = []string{
-	"doctype",
-	"area",
-	"base",
-	"basefont",
-	"br",
-	"col",
-	"frame",
-	"hr",
-	"img",
-	"input",
-	"isindex",
-	"link",
-	"meta",
-	"param",
-	"embed",
-	"keygen",
-	"command",
+var SPACE []byte = []byte(" ")
+
+var NEW_LINE []byte = []byte("\n")
+var LESS_THAN_SLASH []byte = []byte("</")
+var GREATER_THAN_NEW_LINE []byte = []byte(">\n")
+var SLASH_GREATER_THAN_NEW_LINE []byte = []byte ("/>\n")
+var DOUBLE_QUOTE []byte = []byte ("\"")
+var GREATER_THAN []byte = []byte (">")
+var LESS_THAN []byte = []byte ("<")
+
+type Empty struct {}
+var emptyElement = map[string]struct{}{
+	"doctype":Empty{},
+	"area":Empty{},
+	"base":Empty{},
+	"basefont":Empty{},
+	"br":Empty{},
+	"col":Empty{},
+	"frame":Empty{},
+	"hr":Empty{},
+	"img":Empty{},
+	"input":Empty{},
+	"isindex":Empty{},
+	"link":Empty{},
+	"meta":Empty{},
+	"param":Empty{},
+	"embed":Empty{},
+	"keygen":Empty{},
+	"command":Empty{},
 }
 
 type Value interface{}
@@ -82,12 +93,8 @@ type stack struct {
 }
 
 func isEmptyElement(n string) bool {
-	for _, e := range emptyElement {
-		if e == n {
-			return true
-		}
-	}
-	return false
+	_, ok := emptyElement[n]
+	return ok
 }
 
 var rubyInlinePattern = regexp.MustCompile(`#{[^}]*}`)
@@ -113,6 +120,13 @@ func rubyInline(v *vm.VM, s string) (string, error) {
 	return text, nil
 }
 
+// byteRepeat same as bytes.Repeat but Write to the io.Writer
+func bytesRepeat (out io.Writer, b []byte, count int) {
+	for i :=0; i < count; i++ {
+		out.Write(b)
+	}
+}
+
 func printNode(out io.Writer, v *vm.VM, n *Node, indent int) error {
 	if n.Name == "" && n.Expr == "" {
 		for _, c := range n.Children {
@@ -123,40 +137,51 @@ func printNode(out io.Writer, v *vm.VM, n *Node, indent int) error {
 	} else if n.Name == "/" {
 		return nil
 	} else if n.Name == "/!" {
-		out.Write([]byte(strings.Repeat(" ", indent*2) + "<!-- " + n.Text + " -->\n"))
+		bytesRepeat(out, SPACE, indent * 2)
+		out.Write([]byte("<!-- "))
+		out.Write([]byte(n.Text))
+		out.Write([]byte(" -->\n"))
 	} else {
 		// FIXME
 		doctype := n.Name == "doctype"
 		if doctype {
-			out.Write([]byte(strings.Repeat(" ", indent*2) + "<!" + n.Name + " html"))
+			bytesRepeat(out, SPACE, indent*2)
+			out.Write([]byte("<!"))
+			out.Write([]byte(n.Name))
+			out.Write([]byte(" html"))
 		} else if n.Name != "" {
+			bytesRepeat(out, SPACE, indent*2)
+			out.Write(LESS_THAN)
 			if n.Name[len(n.Name)-1] == ':' {
 				name := n.Name[:len(n.Name)-1]
 				if name == "javascript" {
 					name = "script"
 				}
-				out.Write([]byte(strings.Repeat(" ", indent*2) + "<" + name))
+				out.Write([]byte(name))
 			} else {
-				out.Write([]byte(strings.Repeat(" ", indent*2) + "<" + n.Name))
+				out.Write([]byte(n.Name))
 			}
 		}
 		if n.Id != "" {
-			out.Write([]byte(" id=\"" + n.Id + "\""))
+			out.Write([]byte(" id=\""))
+			out.Write([]byte(n.Id))
+			out.Write(DOUBLE_QUOTE)
 		}
 		if len(n.Class) > 0 {
 			out.Write([]byte(" class=\""))
 			for i, c := range n.Class {
 				if i > 0 {
-					out.Write([]byte(" "))
+					out.Write(SPACE)
 				}
 				out.Write([]byte(c))
 			}
-			out.Write([]byte("\""))
+			out.Write(DOUBLE_QUOTE)
 		}
 		if len(n.Attr) > 0 && !doctype {
 			for _, a := range n.Attr {
 				if a.Value == "" {
-					out.Write([]byte(" " + a.Name))
+					out.Write(SPACE)
+					out.Write([]byte(a.Name))
 				} else {
 					value, err := rubyInline(v, a.Value)
 					if err != nil {
@@ -168,7 +193,7 @@ func printNode(out io.Writer, v *vm.VM, n *Node, indent int) error {
 		}
 		if !isEmptyElement(n.Name) {
 			if n.Name != "" {
-				out.Write([]byte(">"))
+				out.Write(GREATER_THAN)
 			}
 			cr := true
 			if n.Expr != "" {
@@ -191,7 +216,7 @@ func printNode(out io.Writer, v *vm.VM, n *Node, indent int) error {
 						return errors.New("can't iterate: " + n.Expr)
 					}
 					if n.Name != "" {
-						out.Write([]byte("\n"))
+						out.Write(NEW_LINE)
 					}
 					if typ == reflect.Chan {
 						i := 0
@@ -236,7 +261,7 @@ func printNode(out io.Writer, v *vm.VM, n *Node, indent int) error {
 					if err != nil {
 						return err
 					}
-					out.Write([]byte(fmt.Sprint(r)))
+					fmt.Fprint(out, r)
 					cr = false
 				}
 				text, err := rubyInline(v, n.Text)
@@ -245,7 +270,7 @@ func printNode(out io.Writer, v *vm.VM, n *Node, indent int) error {
 				}
 				out.Write([]byte(text))
 			} else if len(n.Children) > 0 {
-				out.Write([]byte("\n"))
+				out.Write(NEW_LINE)
 				for _, c := range n.Children {
 					if err := printNode(out, v, c, indent+1); err != nil {
 						return err
@@ -264,18 +289,20 @@ func printNode(out io.Writer, v *vm.VM, n *Node, indent int) error {
 				out.Write([]byte(text))
 				cr = false
 			} else if cr {
-				out.Write([]byte("\n"))
+				out.Write(NEW_LINE)
 			}
 			if n.Name != "" {
 				if cr {
-					out.Write([]byte(strings.Repeat(" ", indent*2)))
+					bytesRepeat(out, SPACE, indent*2)
 				}
-				out.Write([]byte("</" + n.Name + ">\n"))
+				out.Write(LESS_THAN_SLASH)
+				out.Write([]byte(n.Name))
+				out.Write(GREATER_THAN_NEW_LINE)
 			}
 		} else if doctype {
-			out.Write([]byte(">\n"))
+			out.Write(GREATER_THAN_NEW_LINE)
 		} else {
-			out.Write([]byte("/>\n"))
+			out.Write(SLASH_GREATER_THAN_NEW_LINE)
 		}
 	}
 	return nil
