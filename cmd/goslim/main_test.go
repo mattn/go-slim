@@ -1,29 +1,10 @@
-package main_test
+package main
 
 import (
 	"bytes"
-	"fmt"
 	"io/ioutil"
-	"os"
-	"os/exec"
-	"runtime"
 	"testing"
 )
-
-func TestMain(m *testing.M) {
-	os.MkdirAll("tmp", os.ModeDir|os.ModePerm)
-	exe := "tmp/goslim"
-	if runtime.GOOS == "windows" {
-		exe += ".exe"
-	}
-	err := exec.Command("go", "build", "-o", exe).Run()
-	if err != nil {
-		fmt.Println("Failed to build goslim binary:", err)
-		os.Exit(1)
-	}
-
-	os.Exit(m.Run())
-}
 
 func TestFileInput(t *testing.T) {
 	want, err := ioutil.ReadFile("../../testdir/test_each.html")
@@ -35,12 +16,12 @@ func TestFileInput(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	cmd := exec.Command("tmp/goslim", "foo=foo", "foo=bar", "foo=baz")
-	cmd.Stdin = bytes.NewReader(input)
-	got, err := cmd.CombinedOutput()
+	var buf bytes.Buffer
+	err = run(&buf, bytes.NewReader(input), []string{"foo=foo", "foo=bar", "foo=baz"})
 	if err != nil {
-		t.Fatalf("fatal: %v: %v", err, string(got))
+		t.Fatalf("fatal: %v", err)
 	}
+	got := buf.Bytes()
 
 	if bytes.Compare(got, want) != 0 {
 		t.Errorf("want %v, but %v", string(want), string(got))
