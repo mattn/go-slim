@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"io"
 	"os"
 	"strings"
 
@@ -11,18 +12,16 @@ import (
 
 func fatalIf(err error) {
 	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(1)
 	}
 }
 
-func main() {
-	flag.Parse()
-
-	t, err := slim.Parse(os.Stdin)
-	fatalIf(err)
+func run(w io.Writer, r io.Reader, args []string) error {
+	t, err := slim.Parse(r)
+	if err != nil {
+		return err
+	}
 	m := make(map[string]interface{})
-	for _, arg := range flag.Args() {
+	for _, arg := range args {
 		token := strings.SplitN(arg, "=", 2)
 		if len(token) == 2 {
 			if v, ok := m[token[0]]; ok {
@@ -36,6 +35,15 @@ func main() {
 			}
 		}
 	}
-	err = t.Execute(os.Stdout, m)
-	fatalIf(err)
+	return t.Execute(w, m)
+}
+
+func main() {
+	flag.Parse()
+
+	err := run(os.Stdout, os.Stdin, flag.Args())
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
 }
