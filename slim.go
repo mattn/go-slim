@@ -29,35 +29,37 @@ const (
 	sExpr
 )
 
-var SPACE []byte = []byte(" ")
+var (
+	SPACE                       = []byte(" ")
+	NEW_LINE                    = []byte("\n")
+	LESS_THAN_SLASH             = []byte("</")
+	GREATER_THAN_NEW_LINE       = []byte(">\n")
+	SLASH_GREATER_THAN_NEW_LINE = []byte("/>\n")
+	DOUBLE_QUOTE                = []byte("\"")
+	GREATER_THAN                = []byte(">")
+	LESS_THAN                   = []byte("<")
+)
 
-var NEW_LINE []byte = []byte("\n")
-var LESS_THAN_SLASH []byte = []byte("</")
-var GREATER_THAN_NEW_LINE []byte = []byte(">\n")
-var SLASH_GREATER_THAN_NEW_LINE []byte = []byte ("/>\n")
-var DOUBLE_QUOTE []byte = []byte ("\"")
-var GREATER_THAN []byte = []byte (">")
-var LESS_THAN []byte = []byte ("<")
+type Empty struct{}
 
-type Empty struct {}
-var emptyElement = map[string]struct{}{
-	"doctype":Empty{},
-	"area":Empty{},
-	"base":Empty{},
-	"basefont":Empty{},
-	"br":Empty{},
-	"col":Empty{},
-	"frame":Empty{},
-	"hr":Empty{},
-	"img":Empty{},
-	"input":Empty{},
-	"isindex":Empty{},
-	"link":Empty{},
-	"meta":Empty{},
-	"param":Empty{},
-	"embed":Empty{},
-	"keygen":Empty{},
-	"command":Empty{},
+var emptyElements = []string{
+	"doctype",
+	"area",
+	"base",
+	"basefont",
+	"br",
+	"col",
+	"frame",
+	"hr",
+	"img",
+	"input",
+	"isindex",
+	"link",
+	"meta",
+	"param",
+	"embed",
+	"keygen",
+	"command",
 }
 
 type Value interface{}
@@ -93,8 +95,12 @@ type stack struct {
 }
 
 func isEmptyElement(n string) bool {
-	_, ok := emptyElement[n]
-	return ok
+	for _, s := range emptyElements {
+		if s == n {
+			return true
+		}
+	}
+	return false
 }
 
 var rubyInlinePattern = regexp.MustCompile(`#{[^}]*}`)
@@ -121,8 +127,8 @@ func rubyInline(v *vm.VM, s string) (string, error) {
 }
 
 // byteRepeat same as bytes.Repeat but Write to the io.Writer
-func bytesRepeat (out io.Writer, b []byte, count int) {
-	for i :=0; i < count; i++ {
+func bytesRepeat(out io.Writer, b []byte, count int) {
+	for i := 0; i < count; i++ {
 		out.Write(b)
 	}
 }
@@ -137,7 +143,7 @@ func printNode(out io.Writer, v *vm.VM, n *Node, indent int) error {
 	} else if n.Name == "/" {
 		return nil
 	} else if n.Name == "/!" {
-		bytesRepeat(out, SPACE, indent * 2)
+		bytesRepeat(out, SPACE, indent*2)
 		out.Write([]byte("<!-- "))
 		out.Write([]byte(n.Text))
 		out.Write([]byte(" -->\n"))
@@ -384,7 +390,7 @@ func Parse(in io.Reader) (*Template, error) {
 					last = n
 					node = nil
 					for i := 0; i < len(stk); i++ {
-						if stk[i].n >= n {
+						if i > 0 && stk[i].n >= n {
 							node = stk[i-1].node
 							stk = stk[:i]
 							break
