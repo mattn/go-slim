@@ -218,7 +218,6 @@ func printNode(out io.Writer, v *vm.VM, n *Node, indent int) error {
 					switch typ {
 					case reflect.Array, reflect.Slice, reflect.Chan:
 					default:
-						println(typ)
 						return errors.New("can't iterate: " + n.Expr)
 					}
 					if n.Name != "" {
