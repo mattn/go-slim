@@ -28,11 +28,10 @@ func main() {
 	})
 	r.POST("/add", func(c *gin.Context) {
 		name := strings.TrimSpace(c.PostForm("name"))
-		println(name)
 		if name != "" {
 			values = append(values, name)
 		}
 		c.Redirect(http.StatusFound, "/")
 	})
-	r.Run()
+	r.Run(":8081")
 }
