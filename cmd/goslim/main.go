@@ -39,6 +39,10 @@ func run(w io.Writer, r io.Reader, args []string) error {
 }
 
 func main() {
+	flag.Usage = func() {
+		fmt.Fprintf(os.Stderr, "Usage of %s: [key=value]...\n", os.Args[0])
+		os.Exit(2)
+	}
 	flag.Parse()
 
 	err := run(os.Stdout, os.Stdin, flag.Args())
