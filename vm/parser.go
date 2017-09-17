@@ -43,7 +43,7 @@ const yyEofCode = 1
 const yyErrCode = 2
 const yyInitialStackSize = 16
 
-//line parser.go.y:90
+//line parser.go.y:94
 
 /* vim: set et sw=2: */
 
@@ -54,56 +54,53 @@ var yyExca = [...]int{
 	-2, 0,
 }
 
-const yyNprod = 17
 const yyPrivate = 57344
 
-var yyTokenNames []string
-var yyStates []string
-
-const yyLast = 49
+const yyLast = 53
 
 var yyAct = [...]int{
 
-	3, 15, 6, 4, 2, 25, 14, 5, 32, 18,
-	19, 20, 21, 30, 23, 31, 26, 27, 8, 9,
-	10, 11, 12, 13, 29, 8, 9, 10, 11, 12,
-	13, 33, 28, 34, 24, 8, 9, 10, 11, 12,
-	13, 6, 4, 16, 17, 22, 5, 7, 1,
+	26, 3, 31, 25, 37, 31, 14, 32, 29, 18,
+	19, 20, 21, 15, 23, 16, 17, 27, 8, 9,
+	10, 11, 12, 13, 30, 24, 8, 9, 10, 11,
+	12, 13, 35, 34, 36, 8, 9, 10, 11, 12,
+	13, 6, 4, 2, 6, 4, 5, 28, 33, 5,
+	22, 7, 1,
 }
 var yyPact = [...]int{
 
-	-2, -1000, 43, 14, -1000, 37, -8, 36, 37, 37,
-	37, 37, 41, 37, 24, 37, 37, 28, 14, 14,
-	14, 14, -1000, 7, -1000, 5, 14, 14, 1, -1000,
-	37, -1000, 37, 14, 14,
+	37, -1000, 47, 24, -1000, 40, 4, 8, 40, 40,
+	40, 40, 46, 40, 15, 40, 40, 43, 24, 24,
+	24, 24, -1, 7, -1000, -3, 24, 24, 41, 40,
+	-1000, 40, -1000, 40, -6, 24, 24, -1000,
 }
 var yyPgo = [...]int{
 
-	0, 48, 0, 5,
+	0, 52, 0, 3,
 }
 var yyR1 = [...]int{
 
 	0, 1, 1, 1, 3, 3, 3, 2, 2, 2,
-	2, 2, 2, 2, 2, 2, 2,
+	2, 2, 2, 2, 2, 2, 2, 2,
 }
 var yyR2 = [...]int{
 
 	0, 4, 6, 1, 0, 1, 3, 1, 3, 3,
-	3, 3, 3, 4, 3, 4, 1,
+	3, 3, 3, 4, 6, 3, 4, 1,
 }
 var yyChk = [...]int{
 
 	-1000, -1, 6, -2, 5, 9, 4, 4, 11, 12,
 	13, 14, 15, 16, -2, 9, 7, 8, -2, -2,
-	-2, -2, 4, -2, 10, -3, -2, -2, 4, 17,
-	8, 10, 7, -2, -2,
+	-2, -2, 4, -2, 10, -3, -2, -2, 4, 9,
+	17, 8, 10, 7, -3, -2, -2, 10,
 }
 var yyDef = [...]int{
 
-	0, -2, 0, 3, 7, 0, 16, 0, 0, 0,
+	0, -2, 0, 3, 7, 0, 17, 0, 0, 0,
 	0, 0, 0, 0, 0, 4, 0, 0, 9, 10,
-	11, 12, 14, 0, 8, 0, 5, 1, 0, 15,
-	0, 13, 0, 6, 2,
+	11, 12, 15, 0, 8, 0, 5, 1, 0, 4,
+	16, 0, 13, 0, 0, 6, 2, 14,
 }
 var yyTok1 = [...]int{
 
@@ -542,20 +539,26 @@ yydefault:
 			yyVAL.expr = &CallExpr{yyDollar[1].str, yyDollar[3].exprs}
 		}
 	case 14:
-		yyDollar = yyS[yypt-3 : yypt+1]
+		yyDollar = yyS[yypt-6 : yypt+1]
 		//line parser.go.y:77
+		{
+			yyVAL.expr = &MethodCallExpr{Lhs: yyDollar[1].expr, Name: yyDollar[3].str, Exprs: yyDollar[5].exprs}
+		}
+	case 15:
+		yyDollar = yyS[yypt-3 : yypt+1]
+		//line parser.go.y:81
 		{
 			yyVAL.expr = &MemberExpr{Lhs: yyDollar[1].expr, Name: yyDollar[3].str}
 		}
-	case 15:
+	case 16:
 		yyDollar = yyS[yypt-4 : yypt+1]
-		//line parser.go.y:81
+		//line parser.go.y:85
 		{
 			yyVAL.expr = &ItemExpr{Lhs: yyDollar[1].expr, Index: yyDollar[3].expr}
 		}
-	case 16:
+	case 17:
 		yyDollar = yyS[yypt-1 : yypt+1]
-		//line parser.go.y:85
+		//line parser.go.y:89
 		{
 			yyVAL.expr = &IdentExpr{yyDollar[1].str}
 		}
