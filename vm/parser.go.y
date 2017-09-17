@@ -73,6 +73,10 @@ expr : LIT
      {
        $$ = &CallExpr{$1, $3}
      }
+     | expr '.' IDENT '(' exprs ')'
+     {
+       $$ = &MethodCallExpr{Lhs: $1, Name: $3, Exprs: $5}
+     }
      | expr '.' IDENT
      {
        $$ = &MemberExpr{Lhs: $1, Name: $3}

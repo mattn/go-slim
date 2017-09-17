@@ -26,6 +26,31 @@ func (v *VM) Get(n string) (interface{}, bool) {
 	return val, ok
 }
 
+func deref(rv reflect.Value) (reflect.Value, error) {
+loop:
+	for {
+		switch rv.Kind() {
+		case reflect.Interface, reflect.Ptr:
+			rv = rv.Elem()
+		default:
+			break loop
+		}
+	}
+	if !rv.IsValid() {
+		return rv, errors.New("cannot reference value")
+	}
+	return rv, nil
+}
+
+func (v *VM) evalAndDerefRv(expr Expr) (reflect.Value, error) {
+	vv, err := v.Eval(expr)
+	if err != nil {
+		return reflect.ValueOf(nil), err
+	}
+	rv := reflect.ValueOf(vv)
+	return deref(rv)
+}
+
 func (v *VM) Eval(expr Expr) (interface{}, error) {
 	switch t := expr.(type) {
 	case *IdentExpr:
@@ -168,6 +193,44 @@ func (v *VM) Eval(expr Expr) (interface{}, error) {
 			return rv.Interface(), nil
 		}
 		return nil, errors.New("cannot reference item")
+	case *MethodCallExpr:
+		rv, err := v.evalAndDerefRv(t.Lhs)
+		if err != nil {
+			return nil, err
+		}
+		meth := rv.MethodByName(t.Name)
+		if !meth.IsValid() {
+			// consider if receiver type is pointer type
+			ptr := reflect.New(rv.Type())
+			ptr.Elem().Set(rv)
+			meth = ptr.MethodByName(t.Name)
+			if !meth.IsValid() {
+				return nil, fmt.Errorf("cannot reference method: %s", t.Name)
+			}
+		}
+		args := []reflect.Value{}
+		for _, arg := range t.Exprs {
+			rvarg, err := v.evalAndDerefRv(arg)
+			if err != nil {
+				return nil, err
+			}
+			args = append(args, rvarg)
+		}
+		rets := meth.Call(args)
+		if len(rets) == 0 {
+			return nil, nil
+		}
+		vals := []interface{}{}
+		for _, ret := range rets {
+			vals = append(vals, ret.Interface())
+		}
+		if len(rets) == 1 {
+			return vals[0], nil
+		}
+		if err, ok := vals[1].(error); ok {
+			return vals[0], err
+		}
+		return vals[0], nil
 	case *MemberExpr:
 		lhs, err := v.Eval(t.Lhs)
 		if err != nil {

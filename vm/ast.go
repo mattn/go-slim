@@ -28,6 +28,12 @@ type CallExpr struct {
 	Exprs []Expr
 }
 
+type MethodCallExpr struct {
+	Lhs   Expr
+	Name  string
+	Exprs []Expr
+}
+
 type MemberExpr struct {
 	Lhs  Expr
 	Name string
