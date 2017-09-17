@@ -148,24 +148,9 @@ func (v *VM) Eval(expr Expr) (interface{}, error) {
 		}
 		return nil, errors.New("invalid token: " + t.Name)
 	case *ItemExpr:
-		lhs, err := v.Eval(t.Lhs)
+		rv, err := v.evalAndDerefRv(t.Lhs)
 		if err != nil {
 			return nil, err
-		}
-		rv := reflect.ValueOf(lhs)
-
-	deref_item:
-		for {
-			switch rv.Kind() {
-			case reflect.Interface, reflect.Ptr:
-				rv = rv.Elem()
-			default:
-				break deref_item
-			}
-		}
-
-		if !rv.IsValid() {
-			return nil, errors.New("cannot reference item")
 		}
 
 		rhs, err := v.Eval(t.Index)
@@ -232,24 +217,9 @@ func (v *VM) Eval(expr Expr) (interface{}, error) {
 		}
 		return vals[0], nil
 	case *MemberExpr:
-		lhs, err := v.Eval(t.Lhs)
+		rv, err := v.evalAndDerefRv(t.Lhs)
 		if err != nil {
 			return nil, err
-		}
-		rv := reflect.ValueOf(lhs)
-
-	deref_member:
-		for {
-			switch rv.Kind() {
-			case reflect.Interface, reflect.Ptr:
-				rv = rv.Elem()
-			default:
-				break deref_member
-			}
-		}
-
-		if !rv.IsValid() {
-			return nil, errors.New("cannot reference member")
 		}
 
 		if rv.Kind() == reflect.Struct {
