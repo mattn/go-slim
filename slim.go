@@ -297,11 +297,16 @@ func printNode(out io.Writer, v *vm.VM, n *Node, indent int) error {
 				out.Write(NEW_LINE)
 			}
 			if n.Name != "" {
+				name := n.Name
+				if n.Name[len(n.Name)-1] == ':' {
+					name = n.Name[:len(n.Name)-1]
+				}
+
 				if cr {
 					bytesRepeat(out, SPACE, indent*2)
 				}
 				out.Write(LESS_THAN_SLASH)
-				out.Write([]byte(n.Name))
+				out.Write([]byte(name))
 				out.Write(GREATER_THAN_NEW_LINE)
 			}
 		} else if doctype {
