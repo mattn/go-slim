@@ -312,3 +312,41 @@ func TestComment(t *testing.T) {
 		t.Fatalf("expected %v but %v", expect, got)
 	}
 }
+
+func TestRaw(t *testing.T) {
+	tmpl, err := ParseFile("testdir/test_raw.slim")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var buf bytes.Buffer
+	err = tmpl.Execute(&buf, Values{
+		"foo": "<script>alert(1)</script>",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	expect := readFile("testdir/test_raw.html")
+	got := buf.String()
+	if expect != got {
+		t.Fatalf("expected %v but %v", expect, got)
+	}
+}
+
+func TestNoRaw(t *testing.T) {
+	tmpl, err := ParseFile("testdir/test_noraw.slim")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var buf bytes.Buffer
+	err = tmpl.Execute(&buf, Values{
+		"foo": "<script>alert(1)</script>",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	expect := readFile("testdir/test_noraw.html")
+	got := buf.String()
+	if expect != got {
+		t.Fatalf("expected %v but %v", expect, got)
+	}
+}

@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"errors"
 	"fmt"
+	"html"
 	"io"
 	"os"
 	"reflect"
@@ -82,6 +83,7 @@ type Node struct {
 	Text     string
 	Expr     string
 	Children []*Node
+	Raw      bool
 }
 
 func (n *Node) NewChild() *Node {
@@ -266,7 +268,11 @@ func printNode(out io.Writer, v *vm.VM, n *Node, indent int) error {
 					if err != nil {
 						return err
 					}
-					fmt.Fprint(out, r)
+					text := fmt.Sprint(r)
+					if !n.Raw {
+						text = html.EscapeString(text)
+					}
+					out.Write([]byte(text))
 					cr = false
 				}
 				text, err := rubyInline(v, n.Text)
@@ -577,7 +583,11 @@ func Parse(in io.Reader) (*Template, error) {
 					st = sExpr
 				}
 			case sExpr:
-				node.Expr += string(r)
+				if node.Expr == "" && r == '=' {
+					node.Raw = true
+				} else {
+					node.Expr += string(r)
+				}
 			case sText:
 				if node.Text != "" || !unicode.IsSpace(r) {
 					node.Text += string(r)
