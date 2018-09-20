@@ -2,15 +2,18 @@ package slim
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"os"
+	"path/filepath"
 	"testing"
 )
 
-func readFile(fn string) string {
+func readFile(t *testing.T, fn string) string {
 	b, err := ioutil.ReadFile(fn)
 	if err != nil {
-		panic(err)
+		t.Fatal(err)
 	}
 	return string(b)
 }
@@ -25,7 +28,7 @@ func TestSimple(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	expect := readFile("testdir/test_simple.html")
+	expect := readFile(t, "testdir/test_simple.html")
 	got := buf.String()
 	if expect != got {
 		t.Fatalf("expected %v but %v", expect, got)
@@ -65,7 +68,7 @@ func TestValue(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	expect := readFile("testdir/test_value.html")
+	expect := readFile(t, "testdir/test_value.html")
 	got := buf.String()
 	if expect != got {
 		t.Fatalf("expected %v but %v", expect, got)
@@ -98,7 +101,7 @@ func TestEachArray(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	expect := readFile("testdir/test_each.html")
+	expect := readFile(t, "testdir/test_each.html")
 	got := buf.String()
 	if expect != got {
 		t.Fatalf("expected %v but %v", expect, got)
@@ -126,7 +129,7 @@ func TestEachChan(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	expect := readFile("testdir/test_each.html")
+	expect := readFile(t, "testdir/test_each.html")
 	got := buf.String()
 	if expect != got {
 		t.Fatalf("expected %v but %v", expect, got)
@@ -150,7 +153,7 @@ func TestFunc(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	expect := readFile("testdir/test_func.html")
+	expect := readFile(t, "testdir/test_func.html")
 	got := buf.String()
 	if expect != got {
 		t.Fatalf("expected %v but %v", expect, got)
@@ -175,7 +178,7 @@ func TestBuiltins(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	expect := readFile("testdir/test_builtins.html")
+	expect := readFile(t, "testdir/test_builtins.html")
 	got := buf.String()
 	if expect != got {
 		t.Fatalf("expected %v but %v", expect, got)
@@ -213,7 +216,7 @@ func TestOp(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	expect := readFile("testdir/test_op.html")
+	expect := readFile(t, "testdir/test_op.html")
 	got := buf.String()
 	if expect != got {
 		t.Fatalf("expected %v but %v", expect, got)
@@ -232,7 +235,7 @@ func TestInline(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	expect := readFile("testdir/test_inline.html")
+	expect := readFile(t, "testdir/test_inline.html")
 	got := buf.String()
 	if expect != got {
 		t.Fatalf("expected %v but %v", expect, got)
@@ -267,7 +270,7 @@ func TestMember(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	expect := readFile("testdir/test_member.html")
+	expect := readFile(t, "testdir/test_member.html")
 	got := buf.String()
 	if expect != got {
 		t.Fatalf("expected %v but %v", expect, got)
@@ -289,7 +292,7 @@ func TestItem(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	expect := readFile("testdir/test_item.html")
+	expect := readFile(t, "testdir/test_item.html")
 	got := buf.String()
 	if expect != got {
 		t.Fatalf("expected %v but %v", expect, got)
@@ -306,7 +309,7 @@ func TestComment(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	expect := readFile("testdir/test_comment.html")
+	expect := readFile(t, "testdir/test_comment.html")
 	got := buf.String()
 	if expect != got {
 		t.Fatalf("expected %v but %v", expect, got)
@@ -325,7 +328,7 @@ func TestRaw(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	expect := readFile("testdir/test_raw.html")
+	expect := readFile(t, "testdir/test_raw.html")
 	got := buf.String()
 	if expect != got {
 		t.Fatalf("expected %v but %v", expect, got)
@@ -344,9 +347,44 @@ func TestNoRaw(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	expect := readFile("testdir/test_noraw.html")
+	expect := readFile(t, "testdir/test_noraw.html")
 	got := buf.String()
 	if expect != got {
 		t.Fatalf("expected %v but %v", expect, got)
+	}
+}
+
+func TestIssues(t *testing.T) {
+	tests := []string{
+		"test_issue4-001",
+		"test_issue4-002",
+		"test_issue4-003",
+		"test_issue4-004",
+	}
+	for _, test := range tests {
+		tmpl, err := ParseFile(filepath.Join("testdir", test+".slim"))
+		if err != nil {
+			t.Fatal(err)
+		}
+		f, err := os.Open(filepath.Join("testdir", test+".json"))
+		if err != nil {
+			t.Fatal(err)
+		}
+		var values Values
+		err = json.NewDecoder(f).Decode(&values)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		var buf bytes.Buffer
+		err = tmpl.Execute(&buf, values)
+		if err != nil {
+			t.Fatal(err)
+		}
+		expect := readFile(t, filepath.Join("testdir", test+".html"))
+		got := buf.String()
+		if expect != got {
+			t.Fatalf("expected %v but %v", expect, got)
+		}
 	}
 }
