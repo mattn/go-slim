@@ -416,6 +416,7 @@ func Parse(in io.Reader) (*Template, error) {
 							break break_st
 						}
 						node = node.NewChild()
+						stk = append(stk, stack{n: n, node: node})
 					}
 				}
 				switch r {
