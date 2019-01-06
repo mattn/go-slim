@@ -135,10 +135,10 @@ func bytesRepeat(out io.Writer, b []byte, count int) {
 	}
 }
 
-func printNode(out io.Writer, v *vm.VM, n *Node, indent int) error {
+func printNode(t *Template, out io.Writer, v *vm.VM, n *Node, indent int) error {
 	if n.Name == "" && n.Expr == "" {
 		for _, c := range n.Children {
-			if err := printNode(out, v, c, indent); err != nil {
+			if err := printNode(t, out, v, c, indent); err != nil {
 				return err
 			}
 		}
@@ -159,14 +159,15 @@ func printNode(out io.Writer, v *vm.VM, n *Node, indent int) error {
 			out.Write([]byte(" html"))
 		} else if n.Name != "" {
 			bytesRepeat(out, SPACE, indent*2)
-			out.Write(LESS_THAN)
-			if n.Name[len(n.Name)-1] == ':' {
+			if strings.HasSuffix(n.Name, ":") {
 				name := n.Name[:len(n.Name)-1]
-				if name == "javascript" {
-					name = "script"
+				if en, ok := t.renderer[name]; ok {
+					return en(out, n, v)
 				}
+				out.Write(LESS_THAN)
 				out.Write([]byte(name))
 			} else {
+				out.Write(LESS_THAN)
 				out.Write([]byte(n.Name))
 			}
 		}
@@ -241,7 +242,7 @@ func printNode(out io.Writer, v *vm.VM, n *Node, indent int) error {
 								v.Set(fe.Lhs1, x)
 							}
 							for _, c := range n.Children {
-								if err := printNode(out, v, c, indent); err != nil {
+								if err := printNode(t, out, v, c, indent); err != nil {
 									return err
 								}
 							}
@@ -257,7 +258,7 @@ func printNode(out io.Writer, v *vm.VM, n *Node, indent int) error {
 								v.Set(fe.Lhs1, x)
 							}
 							for _, c := range n.Children {
-								if err := printNode(out, v, c, indent); err != nil {
+								if err := printNode(t, out, v, c, indent); err != nil {
 									return err
 								}
 							}
@@ -283,7 +284,7 @@ func printNode(out io.Writer, v *vm.VM, n *Node, indent int) error {
 			} else if len(n.Children) > 0 {
 				out.Write(NEW_LINE)
 				for _, c := range n.Children {
-					if err := printNode(out, v, c, indent+1); err != nil {
+					if err := printNode(t, out, v, c, indent+1); err != nil {
 						return err
 					}
 				}
@@ -304,7 +305,7 @@ func printNode(out io.Writer, v *vm.VM, n *Node, indent int) error {
 			}
 			if n.Name != "" {
 				name := n.Name
-				if n.Name[len(n.Name)-1] == ':' {
+				if strings.HasSuffix(n.Name, ":") {
 					name = n.Name[:len(n.Name)-1]
 				}
 
@@ -325,8 +326,9 @@ func printNode(out io.Writer, v *vm.VM, n *Node, indent int) error {
 }
 
 type Template struct {
-	root *Node
-	fm   Funcs
+	root     *Node
+	renderer map[string]Renderer
+	fm       Funcs
 }
 
 func ParseFile(name string) (*Template, error) {
@@ -337,6 +339,12 @@ func ParseFile(name string) (*Template, error) {
 	defer f.Close()
 
 	return Parse(f)
+}
+
+type Renderer func(out io.Writer, n *Node, v *vm.VM) error
+
+var defaultRenderers = map[string]Renderer{
+	"javascript": javascriptRenderer,
 }
 
 func Parse(in io.Reader) (*Template, error) {
@@ -368,8 +376,8 @@ func Parse(in io.Reader) (*Template, error) {
 
 				if n > last {
 					last = n
-					if node.Name != "" && node.Name[len(node.Name)-1] == ':' {
-						node.Text = tag
+					if strings.HasSuffix(node.Name, ":") {
+						node.Text += tag
 						st = sText
 						break break_st
 					}
@@ -377,6 +385,11 @@ func Parse(in io.Reader) (*Template, error) {
 					stk = append(stk, stack{n: n, node: node})
 				} else if n == last {
 					last = n
+					if strings.HasSuffix(node.Name, ":") {
+						node.Text += "\n" + tag
+						st = sText
+						break break_st
+					}
 					cur := root
 					for cur != nil {
 						var tmp *Node
@@ -388,11 +401,6 @@ func Parse(in io.Reader) (*Template, error) {
 							break
 						}
 						cur = tmp
-					}
-					if cur.Name != "" && cur.Name[len(cur.Name)-1] == ':' {
-						node.Text = tag
-						st = sText
-						break break_st
 					}
 					node = cur.NewChild()
 					stk[len(stk)-1].node = node
@@ -410,8 +418,8 @@ func Parse(in io.Reader) (*Template, error) {
 						node = root.NewChild()
 						stk = stk[:1]
 					} else {
-						if node.Name != "" && node.Name[len(node.Name)-1] == ':' {
-							node.Text = tag
+						if strings.HasSuffix(node.Name, ":") {
+							node.Text += tag
 							st = sText
 							break break_st
 						}
@@ -599,11 +607,23 @@ func Parse(in io.Reader) (*Template, error) {
 	if err := scanner.Err(); err != nil {
 		return nil, err
 	}
-	return &Template{root, nil}, nil
+	newrenderer := make(map[string]Renderer)
+	for n, k := range defaultRenderers {
+		newrenderer[n] = k
+	}
+	return &Template{
+		root:     root,
+		renderer: newrenderer,
+		fm:       nil,
+	}, nil
 }
 
 func (t *Template) FuncMap(m Funcs) {
 	t.fm = m
+}
+
+func (t *Template) RegisterRenderer(name string, r Renderer) {
+	t.renderer[name] = r
 }
 
 func (t *Template) Execute(out io.Writer, value interface{}) error {
@@ -627,5 +647,10 @@ func (t *Template) Execute(out io.Writer, value interface{}) error {
 			}
 		}
 	}
-	return printNode(out, v, t.root, 0)
+	return printNode(t, out, v, t.root, 0)
+}
+
+func javascriptRenderer(out io.Writer, n *Node, v *vm.VM) error {
+	_, err := fmt.Fprintf(out, "<script>%s</script>\n", n.Text)
+	return err
 }

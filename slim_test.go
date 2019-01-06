@@ -242,6 +242,25 @@ func TestInline(t *testing.T) {
 	}
 }
 
+func TestJavaScript(t *testing.T) {
+	tmpl, err := ParseFile("testdir/test_javascript.slim")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var buf bytes.Buffer
+	err = tmpl.Execute(&buf, Values{
+		"name": "golang",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	expect := readFile(t, "testdir/test_javascript.html")
+	got := buf.String()
+	if expect != got {
+		t.Fatalf("expected %v but %v", expect, got)
+	}
+}
+
 func TestMember(t *testing.T) {
 	tmpl, err := ParseFile("testdir/test_member.slim")
 	if err != nil {
