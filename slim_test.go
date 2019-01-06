@@ -4,10 +4,14 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
+
+	"github.com/mattn/go-slim/vm"
 )
 
 func readFile(t *testing.T, fn string) string {
@@ -405,5 +409,37 @@ func TestIssues(t *testing.T) {
 		if expect != got {
 			t.Fatalf("expected %v but %v", expect, got)
 		}
+	}
+}
+
+func TestRenderer(t *testing.T) {
+	tmpl, err := Parse(strings.NewReader(`
+my-lang:
+  hello ${name}
+	`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	tmpl.RegisterRenderer("my-lang", func(out io.Writer, n *Node, v *vm.VM) error {
+		s := os.Expand(n.Text, func(s string) string {
+			if vv, ok := v.Get(s); ok {
+				return fmt.Sprint(vv)
+			}
+			return ""
+		})
+		fmt.Fprint(out, s)
+		return nil
+	})
+	var buf bytes.Buffer
+	err = tmpl.Execute(&buf, Values{
+		"name": "golang",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	got := buf.String()
+	expect := `hello golang`
+	if expect != got {
+		t.Fatalf("expected %v but %v", expect, got)
 	}
 }
