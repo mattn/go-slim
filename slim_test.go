@@ -253,7 +253,7 @@ func TestJavaScript(t *testing.T) {
 	}
 	var buf bytes.Buffer
 	err = tmpl.Execute(&buf, Values{
-		"name": "golang",
+		"array": []int{1, 2, 3},
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -437,8 +437,8 @@ my-lang:
 	if err != nil {
 		t.Fatal(err)
 	}
-	got := buf.String()
-	expect := `hello golang`
+	got := strings.TrimSpace(buf.String())
+	expect := "hello golang"
 	if expect != got {
 		t.Fatalf("expected %v but %v", expect, got)
 	}

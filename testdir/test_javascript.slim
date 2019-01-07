@@ -1,7 +1,11 @@
 doctype 5
 html lang="ja"
   head
+    css:
+      body {
+        background-color: black;
+      }
     javascript:
-      alert(1)
-      alert(2)
-      alert(3)
+      for (var a in {{array}}) {
+        alert(a)
+      }

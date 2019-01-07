@@ -2,6 +2,8 @@ package slim
 
 import (
 	"bufio"
+	"bytes"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"html"
@@ -345,6 +347,7 @@ type Renderer func(out io.Writer, n *Node, v *vm.VM) error
 
 var defaultRenderers = map[string]Renderer{
 	"javascript": javascriptRenderer,
+	"css":        cssRenderer,
 }
 
 func Parse(in io.Reader) (*Template, error) {
@@ -377,7 +380,7 @@ func Parse(in io.Reader) (*Template, error) {
 				if n > last {
 					last = n
 					if strings.HasSuffix(node.Name, ":") {
-						node.Text += tag
+						node.Text += "\n" + strings.Repeat(" ", n) + tag
 						st = sText
 						break break_st
 					}
@@ -386,7 +389,7 @@ func Parse(in io.Reader) (*Template, error) {
 				} else if n == last {
 					last = n
 					if strings.HasSuffix(node.Name, ":") {
-						node.Text += "\n" + tag
+						node.Text += "\n" + strings.Repeat(" ", n) + tag
 						st = sText
 						break break_st
 					}
@@ -406,23 +409,24 @@ func Parse(in io.Reader) (*Template, error) {
 					stk[len(stk)-1].node = node
 				} else if n < last {
 					last = n
-					node = nil
+					found := (*Node)(nil)
 					for i := 0; i < len(stk); i++ {
 						if i > 0 && stk[i].n >= n {
-							node = stk[i-1].node
+							found = stk[i-1].node
 							stk = stk[:i]
 							break
 						}
 					}
+					if found == nil && strings.HasSuffix(node.Name, ":") {
+						node.Text += "\n" + strings.Repeat(" ", n) + tag
+						st = sText
+						break break_st
+					}
+					node = found
 					if node == nil {
 						node = root.NewChild()
 						stk = stk[:1]
 					} else {
-						if strings.HasSuffix(node.Name, ":") {
-							node.Text += tag
-							st = sText
-							break break_st
-						}
 						node = node.NewChild()
 						stk = append(stk, stack{n: n, node: node})
 					}
@@ -651,6 +655,53 @@ func (t *Template) Execute(out io.Writer, value interface{}) error {
 }
 
 func javascriptRenderer(out io.Writer, n *Node, v *vm.VM) error {
-	_, err := fmt.Fprintf(out, "<script>%s</script>\n", n.Text)
+	re := regexp.MustCompile(`{{[a-zA-Z$_]+[a-zA-Z0-9$_]*}}`)
+	var err error
+	s := re.ReplaceAllStringFunc(n.Text, func(s string) string {
+		if err == nil {
+			vv, ok := v.Get(s[2 : len(s)-2])
+			if !ok {
+				err = fmt.Errorf("invalid variable name: %v", s)
+				return ""
+			}
+			var buf bytes.Buffer
+			err = json.NewEncoder(&buf).Encode(vv)
+			if err != nil {
+				return ""
+			}
+			return strings.TrimSpace(buf.String())
+		}
+		return ""
+	})
+	if err != nil {
+		return err
+	}
+	indent := 0
+	for _, r := range s {
+		if !unicode.IsSpace(r) {
+			break
+		}
+		indent++
+	}
+	if indent > 2 {
+		indent -= 2
+	}
+	_, err = fmt.Fprintf(out, "<script>%s%s</script>\n", s, s[:indent])
+	return err
+}
+
+func cssRenderer(out io.Writer, n *Node, v *vm.VM) error {
+	s := n.Text
+	indent := 0
+	for _, r := range s {
+		if !unicode.IsSpace(r) {
+			break
+		}
+		indent++
+	}
+	if indent > 2 {
+		indent -= 2
+	}
+	_, err := fmt.Fprintf(out, "<style type=\"text/css\">%s%s</style>\n", s, s[:indent])
 	return err
 }
