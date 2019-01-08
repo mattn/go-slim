@@ -6,8 +6,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/gin-gonic/gin"
-	"github.com/mattn/go-colorable"
+	"github.com/labstack/echo"
 	"github.com/mattn/go-slim"
 )
 
@@ -20,25 +19,24 @@ func main() {
 	var m sync.RWMutex
 	values := []string{}
 
-	gin.DefaultWriter = colorable.NewColorableStderr()
-	r := gin.Default()
+	e := echo.New()
 
-	r.GET("/", func(c *gin.Context) {
+	e.GET("/", func(c echo.Context) error {
 		m.RLock()
 		defer m.RUnlock()
-		c.Header("content-type", "text/html")
-		t.Execute(c.Writer, map[string]interface{}{
+		c.Request().Header.Set("content-type", "text/html")
+		return t.Execute(c.Response(), map[string]interface{}{
 			"names": values,
 		})
 	})
-	r.POST("/add", func(c *gin.Context) {
-		name := strings.TrimSpace(c.PostForm("name"))
+	e.POST("/add", func(c echo.Context) error {
+		name := strings.TrimSpace(c.Request().PostFormValue("name"))
 		if name != "" {
 			m.Lock()
 			defer m.Unlock()
 			values = append(values, name)
 		}
-		c.Redirect(http.StatusFound, "/")
+		return c.Redirect(http.StatusFound, "/")
 	})
-	r.Run(":8081")
+	e.Start(":8081")
 }
