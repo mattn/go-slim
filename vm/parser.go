@@ -2,21 +2,23 @@
 
 //line parser.go.y:3
 package vm
+
 import __yyfmt__ "fmt"
+
 //line parser.go.y:3
-		
+
 //line parser.go.y:6
 type yySymType struct {
-	yys int
-  expr Expr
-  exprs []Expr
-  str string
-  lit interface{}
+	yys   int
+	expr  Expr
+	exprs []Expr
+	str   string
+	lit   interface{}
 }
 
 const ident = 57346
 const lit = 57347
-const for = 57348
+const cfor = 57348
 const in = 57349
 
 var yyToknames = [...]string{
@@ -25,7 +27,7 @@ var yyToknames = [...]string{
 	"$unk",
 	"ident",
 	"lit",
-	"for",
+	"cfor",
 	"in",
 	"','",
 	"'('",
@@ -45,7 +47,6 @@ const yyErrCode = 2
 const yyInitialStackSize = 16
 
 //line parser.go.y:95
-
 
 /* vim: set et sw=2: */
 
@@ -129,8 +130,7 @@ var yyErrorMessages = [...]struct {
 	state int
 	token int
 	msg   string
-}{
-}
+}{}
 
 //line yaccpar:1
 
@@ -464,107 +464,107 @@ yydefault:
 	switch yynt {
 
 	case 1:
-		yyDollar = yyS[yypt-4:yypt+1]
+		yyDollar = yyS[yypt-4 : yypt+1]
 //line parser.go.y:22
 		{
-	       yylex.(*Lexer).e = &ForExpr{yyDollar[2].str, "", yyDollar[4].expr}
-	     }
+			yylex.(*Lexer).e = &ForExpr{yyDollar[2].str, "", yyDollar[4].expr}
+		}
 	case 2:
-		yyDollar = yyS[yypt-6:yypt+1]
+		yyDollar = yyS[yypt-6 : yypt+1]
 //line parser.go.y:26
 		{
-	       yylex.(*Lexer).e = &ForExpr{yyDollar[2].str, yyDollar[4].str, yyDollar[6].expr}
-	     }
+			yylex.(*Lexer).e = &ForExpr{yyDollar[2].str, yyDollar[4].str, yyDollar[6].expr}
+		}
 	case 3:
-		yyDollar = yyS[yypt-1:yypt+1]
+		yyDollar = yyS[yypt-1 : yypt+1]
 //line parser.go.y:30
 		{
-	       yylex.(*Lexer).e = yyDollar[1].expr
-	     }
+			yylex.(*Lexer).e = yyDollar[1].expr
+		}
 	case 4:
-		yyDollar = yyS[yypt-0:yypt+1]
+		yyDollar = yyS[yypt-0 : yypt+1]
 //line parser.go.y:36
 		{
-	          yyVAL.exprs = nil
-	      }
+			yyVAL.exprs = nil
+		}
 	case 5:
-		yyDollar = yyS[yypt-1:yypt+1]
+		yyDollar = yyS[yypt-1 : yypt+1]
 //line parser.go.y:40
 		{
-	          yyVAL.exprs = []Expr{yyDollar[1].expr}
-	      }
+			yyVAL.exprs = []Expr{yyDollar[1].expr}
+		}
 	case 6:
-		yyDollar = yyS[yypt-3:yypt+1]
+		yyDollar = yyS[yypt-3 : yypt+1]
 //line parser.go.y:44
 		{
-	          yyVAL.exprs = append(yyDollar[1].exprs, yyDollar[3].expr)
-	      }
+			yyVAL.exprs = append(yyDollar[1].exprs, yyDollar[3].expr)
+		}
 	case 7:
-		yyDollar = yyS[yypt-1:yypt+1]
+		yyDollar = yyS[yypt-1 : yypt+1]
 //line parser.go.y:50
 		{
-	       yyVAL.expr = &LitExpr{yyDollar[1].lit}
-	     }
+			yyVAL.expr = &LitExpr{yyDollar[1].lit}
+		}
 	case 8:
-		yyDollar = yyS[yypt-3:yypt+1]
+		yyDollar = yyS[yypt-3 : yypt+1]
 //line parser.go.y:54
 		{
-	       yyVAL.expr = yyDollar[2].expr
-	     }
+			yyVAL.expr = yyDollar[2].expr
+		}
 	case 9:
-		yyDollar = yyS[yypt-3:yypt+1]
+		yyDollar = yyS[yypt-3 : yypt+1]
 //line parser.go.y:58
 		{
-	       yyVAL.expr = &BinOpExpr{"+", yyDollar[1].expr, yyDollar[3].expr}
-	     }
+			yyVAL.expr = &BinOpExpr{"+", yyDollar[1].expr, yyDollar[3].expr}
+		}
 	case 10:
-		yyDollar = yyS[yypt-3:yypt+1]
+		yyDollar = yyS[yypt-3 : yypt+1]
 //line parser.go.y:62
 		{
-	       yyVAL.expr = &BinOpExpr{"-", yyDollar[1].expr, yyDollar[3].expr}
-	     }
+			yyVAL.expr = &BinOpExpr{"-", yyDollar[1].expr, yyDollar[3].expr}
+		}
 	case 11:
-		yyDollar = yyS[yypt-3:yypt+1]
+		yyDollar = yyS[yypt-3 : yypt+1]
 //line parser.go.y:66
 		{
-	       yyVAL.expr = &BinOpExpr{"*", yyDollar[1].expr, yyDollar[3].expr}
-	     }
+			yyVAL.expr = &BinOpExpr{"*", yyDollar[1].expr, yyDollar[3].expr}
+		}
 	case 12:
-		yyDollar = yyS[yypt-3:yypt+1]
+		yyDollar = yyS[yypt-3 : yypt+1]
 //line parser.go.y:70
 		{
-	       yyVAL.expr = &BinOpExpr{"/", yyDollar[1].expr, yyDollar[3].expr}
-	     }
+			yyVAL.expr = &BinOpExpr{"/", yyDollar[1].expr, yyDollar[3].expr}
+		}
 	case 13:
-		yyDollar = yyS[yypt-4:yypt+1]
+		yyDollar = yyS[yypt-4 : yypt+1]
 //line parser.go.y:74
 		{
-	       yyVAL.expr = &CallExpr{yyDollar[1].str, yyDollar[3].exprs}
-	     }
+			yyVAL.expr = &CallExpr{yyDollar[1].str, yyDollar[3].exprs}
+		}
 	case 14:
-		yyDollar = yyS[yypt-6:yypt+1]
+		yyDollar = yyS[yypt-6 : yypt+1]
 //line parser.go.y:78
 		{
-	       yyVAL.expr = &MethodCallExpr{LHS: yyDollar[1].expr, Name: yyDollar[3].str, Exprs: yyDollar[5].exprs}
-	     }
+			yyVAL.expr = &MethodCallExpr{LHS: yyDollar[1].expr, Name: yyDollar[3].str, Exprs: yyDollar[5].exprs}
+		}
 	case 15:
-		yyDollar = yyS[yypt-3:yypt+1]
+		yyDollar = yyS[yypt-3 : yypt+1]
 //line parser.go.y:82
 		{
-	       yyVAL.expr = &MemberExpr{LHS: yyDollar[1].expr, Name: yyDollar[3].str}
-	     }
+			yyVAL.expr = &MemberExpr{LHS: yyDollar[1].expr, Name: yyDollar[3].str}
+		}
 	case 16:
-		yyDollar = yyS[yypt-4:yypt+1]
+		yyDollar = yyS[yypt-4 : yypt+1]
 //line parser.go.y:86
 		{
-	       yyVAL.expr = &ItemExpr{LHS: yyDollar[1].expr, Index: yyDollar[3].expr}
-	     }
+			yyVAL.expr = &ItemExpr{LHS: yyDollar[1].expr, Index: yyDollar[3].expr}
+		}
 	case 17:
-		yyDollar = yyS[yypt-1:yypt+1]
+		yyDollar = yyS[yypt-1 : yypt+1]
 //line parser.go.y:90
 		{
-	       yyVAL.expr = &IdentExpr{yyDollar[1].str}
-	     }
+			yyVAL.expr = &IdentExpr{yyDollar[1].str}
+		}
 	}
 	goto yystack /* stack new state and value */
 }

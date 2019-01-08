@@ -28,26 +28,26 @@ func (l *Lexer) Lex(v *yySymType) int {
 		v.str = l.s.TokenText()
 		switch v.str {
 		case "for":
-			tok = FOR
+			tok = cfor
 		case "in":
-			tok = IN
+			tok = in
 		default:
-			tok = IDENT
+			tok = ident
 		}
 	case scanner.Int:
-		tok = LIT
+		tok = lit
 		v.lit, err = strconv.ParseInt(l.s.TokenText(), 10, 64)
 		if err != nil {
 			return -1
 		}
 	case scanner.Float:
-		tok = LIT
+		tok = lit
 		v.lit, _ = strconv.ParseFloat(l.s.TokenText(), 64)
 		if err != nil {
 			return -1
 		}
 	case scanner.String:
-		tok = LIT
+		tok = lit
 		s := l.s.TokenText()
 		if len(s) >= 2 {
 			v.lit = s[1 : len(s)-1]

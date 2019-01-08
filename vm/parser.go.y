@@ -14,15 +14,15 @@ package vm
 %type<expr> expr
 %type<exprs> exprs
 %token<str> ident
-%token<lit> lit for in
+%token<lit> lit cfor in
 
 %%
 
-stmt :  for ident in expr
+stmt :  cfor ident in expr
      {
        yylex.(*Lexer).e = &ForExpr{$2, "", $4}
      }
-     | for ident ',' ident in expr
+     | cfor ident ',' ident in expr
      {
        yylex.(*Lexer).e = &ForExpr{$2, $4, $6}
      }
