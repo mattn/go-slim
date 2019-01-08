@@ -1,3 +1,4 @@
+// Packer vm is
 %{
 package vm
 %}
@@ -12,16 +13,16 @@ package vm
 %type<expr> stmt
 %type<expr> expr
 %type<exprs> exprs
-%token<str> IDENT
-%token<lit> LIT FOR IN
+%token<str> ident
+%token<lit> lit for in
 
 %%
 
-stmt :  FOR IDENT IN expr
+stmt :  for ident in expr
      {
        yylex.(*Lexer).e = &ForExpr{$2, "", $4}
      }
-     | FOR IDENT ',' IDENT IN expr
+     | for ident ',' ident in expr
      {
        yylex.(*Lexer).e = &ForExpr{$2, $4, $6}
      }
@@ -45,7 +46,7 @@ exprs :
       }
       ;
 
-expr : LIT
+expr : lit
      {
        $$ = &LitExpr{$1}
      }
@@ -69,15 +70,15 @@ expr : LIT
      {
        $$ = &BinOpExpr{"/", $1, $3}
      }
-     | IDENT '(' exprs ')'
+     | ident '(' exprs ')'
      {
        $$ = &CallExpr{$1, $3}
      }
-     | expr '.' IDENT '(' exprs ')'
+     | expr '.' ident '(' exprs ')'
      {
        $$ = &MethodCallExpr{LHS: $1, Name: $3, Exprs: $5}
      }
-     | expr '.' IDENT
+     | expr '.' ident
      {
        $$ = &MemberExpr{LHS: $1, Name: $3}
      }
@@ -85,7 +86,7 @@ expr : LIT
      {
        $$ = &ItemExpr{LHS: $1, Index: $3}
      }
-     | IDENT
+     | ident
      {
        $$ = &IdentExpr{$1}
      }
