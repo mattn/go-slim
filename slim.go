@@ -22,7 +22,7 @@ type state int
 const (
 	sNeutral state = iota
 	sTag
-	sId
+	sID
 	sClass
 	sAttrKey
 	sAttrValue
@@ -33,17 +33,15 @@ const (
 )
 
 var (
-	SPACE                       = []byte(" ")
-	NEW_LINE                    = []byte("\n")
-	LESS_THAN_SLASH             = []byte("</")
-	GREATER_THAN_NEW_LINE       = []byte(">\n")
-	SLASH_GREATER_THAN_NEW_LINE = []byte("/>\n")
-	DOUBLE_QUOTE                = []byte("\"")
-	GREATER_THAN                = []byte(">")
-	LESS_THAN                   = []byte("<")
+	cSpace                   = []byte(" ")
+	cNewLine                 = []byte("\n")
+	cLessThanSlash           = []byte("</")
+	cGreaterThanNewLine      = []byte(">\n")
+	cSlashGreaterThanNewLine = []byte("/>\n")
+	cDoubleQuote             = []byte("\"")
+	cGreaterThan             = []byte(">")
+	cLessThan                = []byte("<")
 )
-
-type Empty struct{}
 
 var emptyElements = []string{
 	"doctype",
@@ -65,29 +63,35 @@ var emptyElements = []string{
 	"command",
 }
 
+// Value is a type for indicating values for expression.
 type Value interface{}
 
+// Func is a type for indicating function for expression.
 type Func func(...Value) (Value, error)
 
+// Funcs is a type for indicating function map to pass FuncMap().
 type Funcs map[string]Func
-type Values map[string]Value
 
+// Attr is a type for indiacating attribute of tag.
 type Attr struct {
 	Name  string
 	Value string
 }
 
+// Node is a type for indicating tag.
 type Node struct {
 	Name     string
-	Id       string
+	ID       string
 	Class    []string
 	Attr     []Attr
 	Text     string
 	Expr     string
 	Children []*Node
 	Raw      bool
+	Indent   int
 }
 
+// NewChild create child node.
 func (n *Node) NewChild() *Node {
 	n.Children = append(n.Children, new(Node))
 	return n.Children[len(n.Children)-1]
@@ -147,7 +151,7 @@ func printNode(t *Template, out io.Writer, v *vm.VM, n *Node, indent int) error 
 	} else if n.Name == "/" {
 		return nil
 	} else if n.Name == "/!" {
-		bytesRepeat(out, SPACE, indent*2)
+		bytesRepeat(out, cSpace, indent*2)
 		out.Write([]byte("<!-- "))
 		out.Write([]byte(n.Text))
 		out.Write([]byte(" -->\n"))
@@ -155,43 +159,43 @@ func printNode(t *Template, out io.Writer, v *vm.VM, n *Node, indent int) error 
 		// FIXME
 		doctype := n.Name == "doctype"
 		if doctype {
-			bytesRepeat(out, SPACE, indent*2)
+			bytesRepeat(out, cSpace, indent*2)
 			out.Write([]byte("<!"))
 			out.Write([]byte(n.Name))
 			out.Write([]byte(" html"))
 		} else if n.Name != "" {
-			bytesRepeat(out, SPACE, indent*2)
+			bytesRepeat(out, cSpace, indent*2)
 			if strings.HasSuffix(n.Name, ":") {
 				name := n.Name[:len(n.Name)-1]
 				if en, ok := t.renderer[name]; ok {
 					return en(out, n, v)
 				}
-				out.Write(LESS_THAN)
+				out.Write(cLessThan)
 				out.Write([]byte(name))
 			} else {
-				out.Write(LESS_THAN)
+				out.Write(cLessThan)
 				out.Write([]byte(n.Name))
 			}
 		}
-		if n.Id != "" {
+		if n.ID != "" {
 			out.Write([]byte(" id=\""))
-			out.Write([]byte(n.Id))
-			out.Write(DOUBLE_QUOTE)
+			out.Write([]byte(n.ID))
+			out.Write(cDoubleQuote)
 		}
 		if len(n.Class) > 0 {
 			out.Write([]byte(" class=\""))
 			for i, c := range n.Class {
 				if i > 0 {
-					out.Write(SPACE)
+					out.Write(cSpace)
 				}
 				out.Write([]byte(c))
 			}
-			out.Write(DOUBLE_QUOTE)
+			out.Write(cDoubleQuote)
 		}
 		if len(n.Attr) > 0 && !doctype {
 			for _, a := range n.Attr {
 				if a.Value == "" {
-					out.Write(SPACE)
+					out.Write(cSpace)
 					out.Write([]byte(a.Name))
 				} else {
 					value, err := rubyInline(v, a.Value)
@@ -204,7 +208,7 @@ func printNode(t *Template, out io.Writer, v *vm.VM, n *Node, indent int) error 
 		}
 		if !isEmptyElement(n.Name) {
 			if n.Name != "" {
-				out.Write(GREATER_THAN)
+				out.Write(cGreaterThan)
 			}
 			cr := true
 			if n.Expr != "" {
@@ -214,7 +218,7 @@ func printNode(t *Template, out io.Writer, v *vm.VM, n *Node, indent int) error 
 				}
 				fe, ok := expr.(*vm.ForExpr)
 				if ok {
-					rhs, err := v.Eval(fe.Rhs)
+					rhs, err := v.Eval(fe.RHS)
 					if err != nil {
 						return err
 					}
@@ -226,7 +230,7 @@ func printNode(t *Template, out io.Writer, v *vm.VM, n *Node, indent int) error 
 						return errors.New("can't iterate: " + n.Expr)
 					}
 					if n.Name != "" {
-						out.Write(NEW_LINE)
+						out.Write(cNewLine)
 					}
 					if typ == reflect.Chan {
 						i := 0
@@ -237,11 +241,11 @@ func printNode(t *Template, out io.Writer, v *vm.VM, n *Node, indent int) error 
 							}
 							x := rr.Interface()
 							i++
-							if fe.Lhs2 != "" {
-								v.Set(fe.Lhs1, i)
-								v.Set(fe.Lhs2, x)
+							if fe.LHS2 != "" {
+								v.Set(fe.LHS1, i)
+								v.Set(fe.LHS2, x)
 							} else {
-								v.Set(fe.Lhs1, x)
+								v.Set(fe.LHS1, x)
 							}
 							for _, c := range n.Children {
 								if err := printNode(t, out, v, c, indent); err != nil {
@@ -253,11 +257,11 @@ func printNode(t *Template, out io.Writer, v *vm.VM, n *Node, indent int) error 
 						l := ra.Len()
 						for i := 0; i < l; i++ {
 							x := ra.Index(i).Interface()
-							if fe.Lhs2 != "" {
-								v.Set(fe.Lhs1, i)
-								v.Set(fe.Lhs2, x)
+							if fe.LHS2 != "" {
+								v.Set(fe.LHS1, i)
+								v.Set(fe.LHS2, x)
 							} else {
-								v.Set(fe.Lhs1, x)
+								v.Set(fe.LHS1, x)
 							}
 							for _, c := range n.Children {
 								if err := printNode(t, out, v, c, indent); err != nil {
@@ -284,7 +288,7 @@ func printNode(t *Template, out io.Writer, v *vm.VM, n *Node, indent int) error 
 				}
 				out.Write([]byte(text))
 			} else if len(n.Children) > 0 {
-				out.Write(NEW_LINE)
+				out.Write(cNewLine)
 				for _, c := range n.Children {
 					if err := printNode(t, out, v, c, indent+1); err != nil {
 						return err
@@ -303,7 +307,7 @@ func printNode(t *Template, out io.Writer, v *vm.VM, n *Node, indent int) error 
 				out.Write([]byte(text))
 				cr = false
 			} else if cr {
-				out.Write(NEW_LINE)
+				out.Write(cNewLine)
 			}
 			if n.Name != "" {
 				name := n.Name
@@ -312,29 +316,31 @@ func printNode(t *Template, out io.Writer, v *vm.VM, n *Node, indent int) error 
 				}
 
 				if cr {
-					bytesRepeat(out, SPACE, indent*2)
+					bytesRepeat(out, cSpace, indent*2)
 				}
-				out.Write(LESS_THAN_SLASH)
+				out.Write(cLessThanSlash)
 				out.Write([]byte(name))
-				out.Write(GREATER_THAN_NEW_LINE)
+				out.Write(cGreaterThanNewLine)
 			}
 		} else if doctype {
-			out.Write(GREATER_THAN_NEW_LINE)
+			out.Write(cGreaterThanNewLine)
 		} else {
-			out.Write(SLASH_GREATER_THAN_NEW_LINE)
+			out.Write(cSlashGreaterThanNewLine)
 		}
 	}
 	return nil
 }
 
+// Template is the representation of a parsed template.
 type Template struct {
 	root     *Node
 	renderer map[string]Renderer
 	fm       Funcs
 }
 
-func ParseFile(name string) (*Template, error) {
-	f, err := os.Open(name)
+// ParseFile parse content of fname.
+func ParseFile(fname string) (*Template, error) {
+	f, err := os.Open(fname)
 	if err != nil {
 		return nil, err
 	}
@@ -343,6 +349,7 @@ func ParseFile(name string) (*Template, error) {
 	return Parse(f)
 }
 
+// Renderer is a type for indicating custom function for renderer.
 type Renderer func(out io.Writer, n *Node, v *vm.VM) error
 
 var defaultRenderers = map[string]Renderer{
@@ -350,6 +357,7 @@ var defaultRenderers = map[string]Renderer{
 	"css":        cssRenderer,
 }
 
+// Parse parse content with reading from reader.
 func Parse(in io.Reader) (*Template, error) {
 	scanner := bufio.NewScanner(in)
 	root := new(Node)
@@ -444,7 +452,7 @@ func Parse(in io.Reader) (*Template, error) {
 					break break_st
 				case '#':
 					node.Name = "div"
-					st = sId
+					st = sID
 					break break_st
 				case '.':
 					node.Name = "div"
@@ -478,7 +486,7 @@ func Parse(in io.Reader) (*Template, error) {
 					} else {
 						node.Name = tag
 					}
-					st = sId
+					st = sID
 				case '.':
 					if tag == "" {
 						node.Name = "div"
@@ -499,21 +507,21 @@ func Parse(in io.Reader) (*Template, error) {
 						tag += string(r)
 					}
 				}
-			case sId:
+			case sID:
 				if eol {
 					if unicode.IsLetter(r) {
 						id += string(r)
-						node.Id = id
+						node.ID = id
 					}
 					break
 				}
 				switch r {
 				case '.':
-					node.Id = id
+					node.ID = id
 					st = sClass
 				default:
 					if !unicode.IsLetter(r) {
-						node.Id = id
+						node.ID = id
 						st = sEq
 					} else {
 						id += string(r)
@@ -622,14 +630,18 @@ func Parse(in io.Reader) (*Template, error) {
 	}, nil
 }
 
+// FuncMap set the template's function map.
 func (t *Template) FuncMap(m Funcs) {
 	t.fm = m
 }
 
+// RegisterRenderer register custom render named with the name.
 func (t *Template) RegisterRenderer(name string, r Renderer) {
 	t.renderer[name] = r
 }
 
+// Execute applies a parsed template to the specified value object,
+// and writes the output to out.
 func (t *Template) Execute(out io.Writer, value interface{}) error {
 	v := vm.New()
 

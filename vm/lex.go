@@ -8,6 +8,7 @@ import (
 	"text/scanner"
 )
 
+// Lexer is a lexer.
 type Lexer struct {
 	s *scanner.Scanner
 	e Expr
@@ -17,6 +18,7 @@ func (l *Lexer) init(reader *strings.Reader) {
 	l.s.Init(reader)
 }
 
+// Lex parse the token.
 func (l *Lexer) Lex(v *yySymType) int {
 	var err error
 	var tok int

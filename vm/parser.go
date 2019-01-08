@@ -54,7 +54,11 @@ var yyExca = [...]int{
 	-2, 0,
 }
 
+const yyNprod = 18
 const yyPrivate = 57344
+
+var yyTokenNames []string
+var yyStates []string
 
 const yyLast = 53
 
@@ -542,19 +546,19 @@ yydefault:
 		yyDollar = yyS[yypt-6 : yypt+1]
 		//line parser.go.y:77
 		{
-			yyVAL.expr = &MethodCallExpr{Lhs: yyDollar[1].expr, Name: yyDollar[3].str, Exprs: yyDollar[5].exprs}
+			yyVAL.expr = &MethodCallExpr{LHS: yyDollar[1].expr, Name: yyDollar[3].str, Exprs: yyDollar[5].exprs}
 		}
 	case 15:
 		yyDollar = yyS[yypt-3 : yypt+1]
 		//line parser.go.y:81
 		{
-			yyVAL.expr = &MemberExpr{Lhs: yyDollar[1].expr, Name: yyDollar[3].str}
+			yyVAL.expr = &MemberExpr{LHS: yyDollar[1].expr, Name: yyDollar[3].str}
 		}
 	case 16:
 		yyDollar = yyS[yypt-4 : yypt+1]
 		//line parser.go.y:85
 		{
-			yyVAL.expr = &ItemExpr{Lhs: yyDollar[1].expr, Index: yyDollar[3].expr}
+			yyVAL.expr = &ItemExpr{LHS: yyDollar[1].expr, Index: yyDollar[3].expr}
 		}
 	case 17:
 		yyDollar = yyS[yypt-1 : yypt+1]

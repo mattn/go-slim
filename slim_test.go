@@ -14,6 +14,9 @@ import (
 	"github.com/mattn/go-slim/vm"
 )
 
+// Values
+type Values map[string]Value
+
 func readFile(t *testing.T, fn string) string {
 	b, err := ioutil.ReadFile(fn)
 	if err != nil {

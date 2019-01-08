@@ -9,18 +9,22 @@ import (
 	"text/scanner"
 )
 
+// VM is a vertual machine.
 type VM struct {
 	env map[string]interface{}
 }
 
+// New create the VM.
 func New() *VM {
 	return &VM{make(map[string]interface{})}
 }
 
+// Set set value with name.
 func (v *VM) Set(n string, vv interface{}) {
 	v.env[n] = vv
 }
 
+// Get get value named with name.
 func (v *VM) Get(n string) (interface{}, bool) {
 	val, ok := v.env[n]
 	return val, ok
@@ -51,6 +55,7 @@ func (v *VM) evalAndDerefRv(expr Expr) (reflect.Value, error) {
 	return deref(rv)
 }
 
+// Eval evaluate the expression.
 func (v *VM) Eval(expr Expr) (interface{}, error) {
 	switch t := expr.(type) {
 	case *IdentExpr:
@@ -61,11 +66,11 @@ func (v *VM) Eval(expr Expr) (interface{}, error) {
 	case *LitExpr:
 		return t.Value, nil
 	case *BinOpExpr:
-		lhs, err := v.Eval(t.Lhs)
+		lhs, err := v.Eval(t.LHS)
 		if err != nil {
 			return nil, err
 		}
-		rhs, err := v.Eval(t.Rhs)
+		rhs, err := v.Eval(t.RHS)
 		if err != nil {
 			return nil, err
 		}
@@ -148,7 +153,7 @@ func (v *VM) Eval(expr Expr) (interface{}, error) {
 		}
 		return nil, errors.New("invalid token: " + t.Name)
 	case *ItemExpr:
-		rv, err := v.evalAndDerefRv(t.Lhs)
+		rv, err := v.evalAndDerefRv(t.LHS)
 		if err != nil {
 			return nil, err
 		}
@@ -179,7 +184,7 @@ func (v *VM) Eval(expr Expr) (interface{}, error) {
 		}
 		return nil, errors.New("cannot reference item")
 	case *MethodCallExpr:
-		rv, err := v.evalAndDerefRv(t.Lhs)
+		rv, err := v.evalAndDerefRv(t.LHS)
 		if err != nil {
 			return nil, err
 		}
@@ -217,7 +222,7 @@ func (v *VM) Eval(expr Expr) (interface{}, error) {
 		}
 		return vals[0], nil
 	case *MemberExpr:
-		rv, err := v.evalAndDerefRv(t.Lhs)
+		rv, err := v.evalAndDerefRv(t.LHS)
 		if err != nil {
 			return nil, err
 		}
@@ -241,6 +246,7 @@ func (v *VM) Eval(expr Expr) (interface{}, error) {
 	return nil, nil
 }
 
+// Compile compile the source.
 func (v *VM) Compile(s string) (Expr, error) {
 	lex := &Lexer{new(scanner.Scanner), nil}
 	lex.s.Init(strings.NewReader(s))

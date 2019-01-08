@@ -75,15 +75,15 @@ expr : LIT
      }
      | expr '.' IDENT '(' exprs ')'
      {
-       $$ = &MethodCallExpr{Lhs: $1, Name: $3, Exprs: $5}
+       $$ = &MethodCallExpr{LHS: $1, Name: $3, Exprs: $5}
      }
      | expr '.' IDENT
      {
-       $$ = &MemberExpr{Lhs: $1, Name: $3}
+       $$ = &MemberExpr{LHS: $1, Name: $3}
      }
      | expr '[' expr ']'
      {
-       $$ = &ItemExpr{Lhs: $1, Index: $3}
+       $$ = &ItemExpr{LHS: $1, Index: $3}
      }
      | IDENT
      {
