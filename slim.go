@@ -601,8 +601,8 @@ func Parse(in io.Reader) (*Template, error) {
 			case sEq:
 				if r != '=' && !unicode.IsSpace(r) {
 					node.Expr += string(r)
-					st = sExpr
 				}
+				st = sExpr
 			case sExpr:
 				if node.Expr == "" && r == '=' {
 					node.Raw = true
