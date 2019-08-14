@@ -359,6 +359,9 @@ var defaultRenderers = map[string]Renderer{
 
 // Parse parse content with reading from reader.
 func Parse(in io.Reader) (*Template, error) {
+	if in == nil {
+		return nil, errors.New("invalid input")
+	}
 	scanner := bufio.NewScanner(in)
 	root := new(Node)
 	node := root

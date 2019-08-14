@@ -10,11 +10,6 @@ import (
 	"github.com/mattn/go-slim"
 )
 
-func fatalIf(err error) {
-	if err != nil {
-	}
-}
-
 func run(w io.Writer, r io.Reader, args []string) error {
 	t, err := slim.Parse(r)
 	if err != nil {
