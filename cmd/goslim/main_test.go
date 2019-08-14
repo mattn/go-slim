@@ -6,6 +6,13 @@ import (
 	"testing"
 )
 
+func TestNilInput(t *testing.T) {
+	err := run(nil, nil, []string{"foo=foo", "foo=bar", "foo=baz"})
+	if err == nil {
+		t.Fatalf("should be fail")
+	}
+}
+
 func TestFileInput(t *testing.T) {
 	want, err := ioutil.ReadFile("../../testdir/test_each.html")
 	if err != nil {
