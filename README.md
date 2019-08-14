@@ -1,7 +1,7 @@
 # go-slim
 
+[![codecov](https://codecov.io/gh/mattn/go-slim/branch/master/graph/badge.svg)](https://codecov.io/gh/mattn/go-slim)
 [![Build Status](https://travis-ci.org/mattn/go-slim.png?branch=master)](https://travis-ci.org/mattn/go-slim)
-[![Coverage Status](https://coveralls.io/repos/github/mattn/go-slim/badge.svg?branch=master)](https://coveralls.io/github/mattn/go-slim?branch=master)
 [![GoDoc](https://godoc.org/github.com/mattn/go-slim?status.svg)](http://godoc.org/github.com/mattn/go-slim)
 
 slim template engine for golang
