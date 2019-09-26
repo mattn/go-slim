@@ -9,6 +9,7 @@ import (
 	"html"
 	"io"
 	"os"
+	"path/filepath"
 	"reflect"
 	"regexp"
 	"strings"
@@ -336,6 +337,7 @@ type Template struct {
 	root     *Node
 	renderer map[string]Renderer
 	fm       Funcs
+	dir      string
 }
 
 // ParseFile parse content of fname.
@@ -626,10 +628,16 @@ func Parse(in io.Reader) (*Template, error) {
 	for n, k := range defaultRenderers {
 		newrenderer[n] = k
 	}
+
+	dir, _ := os.Getwd()
+	if ff, ok := in.(*os.File); ok {
+		dir, _ = filepath.Abs(filepath.Dir(ff.Name()))
+	}
 	return &Template{
 		root:     root,
 		renderer: newrenderer,
 		fm:       nil,
+		dir:      dir,
 	}, nil
 }
 
@@ -673,6 +681,9 @@ func (t *Template) Execute(out io.Writer, value interface{}) error {
 	v := vm.New()
 
 	v.Set("render", func(name string) error {
+		if !filepath.IsAbs(name) {
+			name = filepath.Join(t.dir, name)
+		}
 		tt, err := ParseFile(name)
 		if err != nil {
 			return err
