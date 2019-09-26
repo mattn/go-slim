@@ -688,6 +688,7 @@ func (t *Template) Execute(out io.Writer, value interface{}) error {
 		if err != nil {
 			return err
 		}
+		tt.dir = filepath.Dir(name)
 		return tt.execute(v, out, value)
 	})
 
