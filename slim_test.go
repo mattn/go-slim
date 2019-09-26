@@ -446,3 +446,22 @@ my-lang:
 		t.Fatalf("expected %v but %v", expect, got)
 	}
 }
+
+func TestRenderInner(t *testing.T) {
+	tmpl, err := ParseFile("testdir/test_render.slim")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var buf bytes.Buffer
+	err = tmpl.Execute(&buf, Values{
+		"foo": []int{1, 2, 3},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	expect := readFile(t, "testdir/test_render.html")
+	got := buf.String()
+	if expect != got {
+		t.Fatalf("expected %v but %v", expect, got)
+	}
+}
