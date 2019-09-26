@@ -15,6 +15,13 @@ func run(w io.Writer, r io.Reader, args []string) error {
 	if err != nil {
 		return err
 	}
+	t.FuncMap(slim.Funcs{
+		"trim":     slim.Trim,
+		"to_upper": slim.ToUpper,
+		"to_lower": slim.ToLower,
+		"repeat":   slim.Repeat,
+	})
+
 	m := make(map[string]interface{})
 	for _, arg := range args {
 		token := strings.SplitN(arg, "=", 2)

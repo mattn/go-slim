@@ -9,6 +9,7 @@ import (
 	"html"
 	"io"
 	"os"
+	"path/filepath"
 	"reflect"
 	"regexp"
 	"strings"
@@ -336,6 +337,7 @@ type Template struct {
 	root     *Node
 	renderer map[string]Renderer
 	fm       Funcs
+	dir      string
 }
 
 // ParseFile parse content of fname.
@@ -626,10 +628,16 @@ func Parse(in io.Reader) (*Template, error) {
 	for n, k := range defaultRenderers {
 		newrenderer[n] = k
 	}
+
+	dir, _ := os.Getwd()
+	if ff, ok := in.(*os.File); ok {
+		dir, _ = filepath.Abs(filepath.Dir(ff.Name()))
+	}
 	return &Template{
 		root:     root,
 		renderer: newrenderer,
 		fm:       nil,
+		dir:      dir,
 	}, nil
 }
 
@@ -645,9 +653,7 @@ func (t *Template) RegisterRenderer(name string, r Renderer) {
 
 // Execute applies a parsed template to the specified value object,
 // and writes the output to out.
-func (t *Template) Execute(out io.Writer, value interface{}) error {
-	v := vm.New()
-
+func (t *Template) execute(v *vm.VM, out io.Writer, value interface{}) error {
 	if t.fm != nil {
 		for key, val := range t.fm {
 			v.Set(key, val)
@@ -667,6 +673,26 @@ func (t *Template) Execute(out io.Writer, value interface{}) error {
 		}
 	}
 	return printNode(t, out, v, t.root, 0)
+}
+
+// Execute applies a parsed template to the specified value object,
+// and writes the output to out.
+func (t *Template) Execute(out io.Writer, value interface{}) error {
+	v := vm.New()
+
+	v.Set("render", func(name string) error {
+		if !filepath.IsAbs(name) {
+			name = filepath.Join(t.dir, name)
+		}
+		tt, err := ParseFile(name)
+		if err != nil {
+			return err
+		}
+		tt.dir = filepath.Dir(name)
+		return tt.execute(v, out, value)
+	})
+
+	return t.execute(v, out, value)
 }
 
 func javascriptRenderer(out io.Writer, n *Node, v *vm.VM) error {
