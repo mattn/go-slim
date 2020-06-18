@@ -276,11 +276,13 @@ func printNode(t *Template, out io.Writer, v *vm.VM, n *Node, indent int) error 
 					if err != nil {
 						return err
 					}
-					text := fmt.Sprint(r)
-					if !n.Raw {
-						text = html.EscapeString(text)
+					if r != nil {
+						text := fmt.Sprint(r)
+						if !n.Raw {
+							text = html.EscapeString(text)
+						}
+						out.Write([]byte(text))
 					}
-					out.Write([]byte(text))
 					cr = false
 				}
 				text, err := rubyInline(v, n.Text)
