@@ -338,6 +338,7 @@ func printNode(t *Template, out io.Writer, v *vm.VM, n *Node, indent int) error 
 type Template struct {
 	root     *Node
 	renderer map[string]Renderer
+	inner    map[string]*Template
 	fm       Funcs
 	dir      string
 }
@@ -638,6 +639,7 @@ func Parse(in io.Reader) (*Template, error) {
 	return &Template{
 		root:     root,
 		renderer: newrenderer,
+		inner:    map[string]*Template{},
 		fm:       nil,
 		dir:      dir,
 	}, nil
@@ -683,6 +685,10 @@ func (t *Template) Execute(out io.Writer, value interface{}) error {
 	v := vm.New()
 
 	v.Set("render", func(name string) error {
+		if tt, ok := t.inner[name]; ok {
+			tt.dir = filepath.Dir(name)
+			return tt.execute(v, out, value)
+		}
 		if !filepath.IsAbs(name) {
 			name = filepath.Join(t.dir, name)
 		}
