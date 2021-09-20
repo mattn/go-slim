@@ -685,12 +685,12 @@ func (t *Template) Execute(out io.Writer, value interface{}) error {
 	v := vm.New()
 
 	v.Set("render", func(name string) error {
+		if !filepath.IsAbs(name) {
+			name = filepath.Join(t.dir, name)
+		}
 		if tt, ok := t.inner[name]; ok {
 			tt.dir = filepath.Dir(name)
 			return tt.execute(v, out, value)
-		}
-		if !filepath.IsAbs(name) {
-			name = filepath.Join(t.dir, name)
 		}
 		tt, err := ParseFile(name)
 		if err != nil {
