@@ -38,7 +38,7 @@ func TestSimple(t *testing.T) {
 	expect := readFile(t, "testdir/test_simple.html")
 	got := buf.String()
 	if expect != got {
-		t.Fatalf("expected %v but %v", expect, got)
+		t.Fatalf("expected %q but %q", expect, got)
 	}
 }
 
