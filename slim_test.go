@@ -497,6 +497,25 @@ func TestIDAndClass(t *testing.T) {
 	}
 }
 
+func TestIDClassAndAttr(t *testing.T) {
+	tmpl, err := ParseFile("testdir/test_id_class_and_attrs.slim")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var buf bytes.Buffer
+	err = tmpl.Execute(&buf, Values{
+		"secret": 1,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	expect := readFile(t, "testdir/test_id_class_and_attrs.html")
+	got := buf.String()
+	if expect != got {
+		t.Fatalf("expected %v but %v", expect, got)
+	}
+}
+
 func TestIsAttributeValue(t *testing.T) {
 	tests := []struct {
 		in     rune
