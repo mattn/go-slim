@@ -517,7 +517,7 @@ func Parse(in io.Reader) (*Template, error) {
 				}
 			case sID:
 				if eol {
-					if unicode.IsLetter(r) {
+					if isUnquotedAttributeValue(r) { // FIXME
 						id += string(r)
 						node.ID = id
 					}
@@ -528,7 +528,7 @@ func Parse(in io.Reader) (*Template, error) {
 					node.ID = id
 					st = sClass
 				default:
-					if !unicode.IsLetter(r) {
+					if !isUnquotedAttributeValue(r) { // FIXME
 						node.ID = id
 						st = sEq
 					} else {
@@ -537,7 +537,7 @@ func Parse(in io.Reader) (*Template, error) {
 				}
 			case sClass:
 				if eol {
-					if unicode.IsLetter(r) {
+					if isUnquotedAttributeValue(r) { // FIXME
 						class += string(r)
 						node.Class = append(node.Class, class)
 					}
@@ -550,7 +550,7 @@ func Parse(in io.Reader) (*Template, error) {
 						class = ""
 					}
 				default:
-					if !unicode.IsLetter(r) {
+					if !isUnquotedAttributeValue(r) { // FIXME
 						if class != "" {
 							node.Class = append(node.Class, class)
 						}
@@ -581,7 +581,7 @@ func Parse(in io.Reader) (*Template, error) {
 				}
 			case sAttrValue:
 				if eol {
-					if unicode.IsLetter(r) || unicode.IsNumber(r) || r == '"' {
+					if isUnquotedAttributeValue(r) || r == '"' { // FIXME
 						avalue += string(r)
 						if avalue[0] == '"' && avalue[len(avalue)-1] == '"' {
 							avalue = avalue[1 : len(avalue)-1]
@@ -754,4 +754,15 @@ func cssRenderer(out io.Writer, n *Node, v *vm.VM) error {
 	}
 	_, err := fmt.Fprintf(out, "<style type=\"text/css\">%s%s</style>\n", s, s[:indent])
 	return err
+}
+
+// ..in addition to the requirements given above for attribute values, must not
+//   contain any literal ASCII whitespace, any U+0022 QUOTATION MARK characters ("),
+//   U+0027 APOSTROPHE characters ('), U+003D EQUALS SIGN characters (=),
+//   U+003C LESS-THAN SIGN characters (<), U+003E GREATER-THAN SIGN characters (>),
+//   or U+0060 GRAVE ACCENT characters (`), and must not be the empty string.
+func isUnquotedAttributeValue(r rune) bool {
+	return !(unicode.IsSpace(r) ||
+		r == '"' || r == '\'' || r == '=' ||
+		r == '<' || r == '>' || r == '`')
 }
