@@ -581,7 +581,7 @@ func Parse(in io.Reader) (*Template, error) {
 				}
 			case sAttrValue:
 				if eol {
-					if unicode.IsLetter(r) || r == '"' {
+					if unicode.IsLetter(r) || unicode.IsNumber(r) || r == '"' {
 						avalue += string(r)
 						if avalue[0] == '"' && avalue[len(avalue)-1] == '"' {
 							avalue = avalue[1 : len(avalue)-1]
