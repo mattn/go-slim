@@ -19,8 +19,6 @@ jobs:
         with:
           go-version: ${{ matrix.go }}
 
-      - run: go generate ./...
-      - run: git diff --cached --exit-code
       - run: go test ./... -v -cover -coverprofile coverage.out
       - run: go test -bench . -benchmem
 
