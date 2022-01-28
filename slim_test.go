@@ -504,7 +504,8 @@ func TestIDClassAndAttr(t *testing.T) {
 	}
 	var buf bytes.Buffer
 	err = tmpl.Execute(&buf, Values{
-		"secret": 1,
+		"title": "HELLO, RENDER",
+		"text":  "Hello, Render",
 	})
 	if err != nil {
 		t.Fatal(err)
