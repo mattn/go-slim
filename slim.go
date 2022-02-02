@@ -67,6 +67,9 @@ var emptyElements = []string{
 // Value is a type for indicating values for expression.
 type Value interface{}
 
+// Values is a collection of Value
+type Values map[string]Value
+
 // Func is a type for indicating function for expression.
 type Func func(...Value) (Value, error)
 
