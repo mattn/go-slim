@@ -2,7 +2,7 @@
 
 [![Build Status](https://github.com/mattn/go-slim/workflows/test/badge.svg?branch=master)](https://github.com/mattn/go-slim/actions?query=workflow%3Atest)
 [![Codecov](https://codecov.io/gh/mattn/go-slim/branch/master/graph/badge.svg)](https://codecov.io/gh/mattn/go-slim)
-[![GoDoc](https://godoc.org/github.com/mattn/go-slim?status.svg)](http://godoc.org/github.com/mattn/go-slim)
+[![Go Reference](https://pkg.go.dev/badge/github.com/mattn/go-slim.svg)](https://pkg.go.dev/github.com/mattn/go-slim)
 [![Go Report Card](https://goreportcard.com/badge/github.com/mattn/go-slim)](https://goreportcard.com/report/github.com/mattn/go-slim)
 
 slim template engine for golang
