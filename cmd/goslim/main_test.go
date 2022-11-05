@@ -14,11 +14,11 @@ func TestNilInput(t *testing.T) {
 }
 
 func TestFileInput(t *testing.T) {
-	want, err := ioutil.ReadFile("../../testdir/test_each.html")
+	want, err := ioutil.ReadFile("../../testdata/test_each.html")
 	if err != nil {
 		t.Fatal(err)
 	}
-	input, err := ioutil.ReadFile("../../testdir/test_each.slim")
+	input, err := ioutil.ReadFile("../../testdata/test_each.slim")
 	if err != nil {
 		t.Fatal(err)
 	}
