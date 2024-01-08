@@ -768,10 +768,11 @@ func cssRenderer(out io.Writer, n *Node, v *vm.VM) error {
 }
 
 // ..in addition to the requirements given above for attribute values, must not
-//   contain any literal ASCII whitespace, any U+0022 QUOTATION MARK characters ("),
-//   U+0027 APOSTROPHE characters ('), U+003D EQUALS SIGN characters (=),
-//   U+003C LESS-THAN SIGN characters (<), U+003E GREATER-THAN SIGN characters (>),
-//   or U+0060 GRAVE ACCENT characters (`), and must not be the empty string.
+//
+//	contain any literal ASCII whitespace, any U+0022 QUOTATION MARK characters ("),
+//	U+0027 APOSTROPHE characters ('), U+003D EQUALS SIGN characters (=),
+//	U+003C LESS-THAN SIGN characters (<), U+003E GREATER-THAN SIGN characters (>),
+//	or U+0060 GRAVE ACCENT characters (`), and must not be the empty string.
 func isUnquotedAttributeValue(r rune) bool {
 	return !(unicode.IsSpace(r) ||
 		r == '"' || r == '\'' || r == '=' ||
