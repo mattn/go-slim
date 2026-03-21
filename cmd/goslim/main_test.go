@@ -58,7 +58,7 @@ func TestJSONInput(t *testing.T) {
 	resetFlags()
 
 	// Create temp JSON file
-	data := map[string]interface{}{
+	data := map[string]any{
 		"foo": []string{"foo", "bar", "baz"},
 	}
 	tmp, err := os.CreateTemp("", "goslim-test-*.json")

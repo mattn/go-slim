@@ -11,27 +11,27 @@ import (
 
 // VM is a vertual machine.
 type VM struct {
-	env map[string]interface{}
+	env map[string]any
 }
 
 // New create the VM.
 func New() *VM {
-	return &VM{make(map[string]interface{})}
+	return &VM{make(map[string]any)}
 }
 
 // Set set value with name.
-func (v *VM) Set(n string, vv interface{}) {
+func (v *VM) Set(n string, vv any) {
 	v.env[n] = vv
 }
 
 // Get get value named with name.
-func (v *VM) Get(n string) (interface{}, bool) {
+func (v *VM) Get(n string) (any, bool) {
 	val, ok := v.env[n]
 	return val, ok
 }
 
 // IsTrue returns true if the value is truthy.
-func IsTrue(v interface{}) bool {
+func IsTrue(v any) bool {
 	if v == nil {
 		return false
 	}
@@ -88,7 +88,7 @@ func (v *VM) evalAndDerefRv(expr Expr) (reflect.Value, error) {
 }
 
 // Eval evaluate the expression.
-func (v *VM) Eval(expr Expr) (interface{}, error) {
+func (v *VM) Eval(expr Expr) (any, error) {
 	switch t := expr.(type) {
 	case *IdentExpr:
 		if r, ok := v.env[t.Name]; ok {
@@ -246,7 +246,7 @@ func (v *VM) Eval(expr Expr) (interface{}, error) {
 			if len(rets) == 0 {
 				return nil, nil
 			}
-			vals := []interface{}{}
+			vals := []any{}
 			for _, ret := range rets {
 				vals = append(vals, ret.Interface())
 			}
@@ -317,7 +317,7 @@ func (v *VM) Eval(expr Expr) (interface{}, error) {
 		if len(rets) == 0 {
 			return nil, nil
 		}
-		vals := []interface{}{}
+		vals := []any{}
 		for _, ret := range rets {
 			vals = append(vals, ret.Interface())
 		}

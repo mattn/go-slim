@@ -7,7 +7,7 @@ package vm
   expr Expr
   exprs []Expr
   str string
-  lit interface{}
+  lit any
 }
 
 %type<expr> stmt

@@ -30,7 +30,7 @@ func main() {
 		m.RLock()
 		defer m.RUnlock()
 		c.Request().Header.Set("content-type", "text/html")
-		return t.Execute(c.Response(), map[string]interface{}{
+		return t.Execute(c.Response(), map[string]any{
 			"names": values,
 		})
 	})

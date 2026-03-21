@@ -47,7 +47,7 @@ func run(w io.Writer, args []string) error {
 		t.SetLayout(*layoutFile)
 	}
 
-	var values map[string]interface{}
+	var values map[string]any
 
 	if *jsonFile != "" {
 		f, err := os.Open(*jsonFile)
@@ -59,7 +59,7 @@ func run(w io.Writer, args []string) error {
 			return err
 		}
 	} else {
-		values = make(map[string]interface{})
+		values = make(map[string]any)
 	}
 
 	// key=value args override/add to JSON values

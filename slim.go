@@ -69,7 +69,7 @@ var emptyElements = []string{
 }
 
 // Value is a type for indicating values for expression.
-type Value interface{}
+type Value any
 
 // Values is a collection of Value
 type Values map[string]Value
@@ -914,7 +914,7 @@ func (t *Template) RegisterRenderer(name string, r Renderer) {
 
 // Execute applies a parsed template to the specified value object,
 // and writes the output to out.
-func (t *Template) execute(v *vm.VM, out io.Writer, value interface{}) error {
+func (t *Template) execute(v *vm.VM, out io.Writer, value any) error {
 	if t.fm != nil {
 		for key, val := range t.fm {
 			v.Set(key, val)
@@ -938,7 +938,7 @@ func (t *Template) execute(v *vm.VM, out io.Writer, value interface{}) error {
 
 // Execute applies a parsed template to the specified value object,
 // and writes the output to out.
-func (t *Template) Execute(out io.Writer, value interface{}) error {
+func (t *Template) Execute(out io.Writer, value any) error {
 	v := vm.New()
 
 	v.Set("render", func(name string) error {

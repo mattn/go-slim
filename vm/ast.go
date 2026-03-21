@@ -18,7 +18,7 @@ type IdentExpr struct {
 
 // LitExpr is a type for indicating literals.
 type LitExpr struct {
-	Value interface{}
+	Value any
 }
 
 // NotExpr is a type for indicating logical not.

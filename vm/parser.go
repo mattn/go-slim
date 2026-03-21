@@ -13,7 +13,7 @@ type yySymType struct {
 	expr  Expr
 	exprs []Expr
 	str   string
-	lit   interface{}
+	lit   any
 }
 
 const ident = 57346

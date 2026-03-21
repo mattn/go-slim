@@ -182,7 +182,7 @@ func TestCallNonFunction(t *testing.T) {
 
 func TestIsTrue(t *testing.T) {
 	tests := []struct {
-		val    interface{}
+		val    any
 		expect bool
 	}{
 		{nil, false},
