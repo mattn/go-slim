@@ -510,6 +510,42 @@ func TestRenderInner(t *testing.T) {
 	}
 }
 
+func TestParseFS(t *testing.T) {
+	tmpl, err := ParseFS(os.DirFS("testdata"), "test_simple.slim")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var buf bytes.Buffer
+	err = tmpl.Execute(&buf, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	expect := readFile(t, "testdata/test_simple.html")
+	got := buf.String()
+	if expect != got {
+		t.Fatalf("expected %v but %v", expect, got)
+	}
+}
+
+func TestParseFSWithRender(t *testing.T) {
+	tmpl, err := ParseFS(os.DirFS("testdata"), "test_render.slim")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var buf bytes.Buffer
+	err = tmpl.Execute(&buf, Values{
+		"foo": []int{1, 2, 3},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	expect := readFile(t, "testdata/test_render.html")
+	got := buf.String()
+	if expect != got {
+		t.Fatalf("expected %v but %v", expect, got)
+	}
+}
+
 func TestAttr(t *testing.T) {
 	tmpl, err := ParseFile("testdata/test_attr.slim")
 	if err != nil {

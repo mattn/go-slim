@@ -8,7 +8,9 @@ import (
 	"fmt"
 	"html"
 	"io"
+	"io/fs"
 	"os"
+	"path"
 	"path/filepath"
 	"reflect"
 	"regexp"
@@ -345,6 +347,7 @@ type Template struct {
 	inner    map[string]*Template
 	fm       Funcs
 	dir      string
+	fsys     fs.FS
 }
 
 // ParseFile parse content of fname.
@@ -356,6 +359,23 @@ func ParseFile(fname string) (*Template, error) {
 	defer f.Close()
 
 	return Parse(f)
+}
+
+// ParseFS parse content of name from fsys.
+func ParseFS(fsys fs.FS, name string) (*Template, error) {
+	f, err := fsys.Open(name)
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+
+	t, err := Parse(f)
+	if err != nil {
+		return nil, err
+	}
+	t.fsys = fsys
+	t.dir = path.Dir(name)
+	return t, nil
 }
 
 // Renderer is a type for indicating custom function for renderer.
@@ -689,6 +709,18 @@ func (t *Template) Execute(out io.Writer, value interface{}) error {
 	v := vm.New()
 
 	v.Set("render", func(name string) error {
+		if t.fsys != nil {
+			name = path.Join(t.dir, name)
+			if tt, ok := t.inner[name]; ok {
+				return tt.execute(v, out, value)
+			}
+			tt, err := ParseFS(t.fsys, name)
+			if err != nil {
+				return err
+			}
+			t.inner[name] = tt
+			return tt.execute(v, out, value)
+		}
 		if !filepath.IsAbs(name) {
 			name = filepath.Join(t.dir, name)
 		}
