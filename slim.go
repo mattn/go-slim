@@ -245,7 +245,6 @@ func printNode(t *Template, out io.Writer, v *vm.VM, n *Node, indent int) error 
 								break
 							}
 							x := rr.Interface()
-							i++
 							if fe.LHS2 != "" {
 								v.Set(fe.LHS1, i)
 								v.Set(fe.LHS2, x)
@@ -257,6 +256,7 @@ func printNode(t *Template, out io.Writer, v *vm.VM, n *Node, indent int) error 
 									return err
 								}
 							}
+							i++
 						}
 					} else {
 						l := ra.Len()
