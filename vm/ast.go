@@ -21,6 +21,17 @@ type LitExpr struct {
 	Value interface{}
 }
 
+// NotExpr is a type for indicating logical not.
+type NotExpr struct {
+	Expr Expr
+}
+
+// IfExpr is a type for indicating if/elsif/else.
+type IfExpr struct {
+	Cond Expr
+	Neg  bool // true for unless
+}
+
 // ForExpr is a type for indicating expression.
 type ForExpr struct {
 	LHS1 string

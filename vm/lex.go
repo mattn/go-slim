@@ -33,6 +33,23 @@ func (l *Lexer) Lex(v *yySymType) int {
 			tok = in
 		case "yield":
 			tok = cyield
+		case "if":
+			tok = cif
+		case "elsif":
+			tok = celsif
+		case "else":
+			tok = celse
+		case "unless":
+			tok = cunless
+		case "true":
+			tok = lit
+			v.lit = true
+		case "false":
+			tok = lit
+			v.lit = false
+		case "nil":
+			tok = lit
+			v.lit = nil
 		default:
 			tok = ident
 		}
@@ -56,6 +73,48 @@ func (l *Lexer) Lex(v *yySymType) int {
 		}
 	case scanner.EOF:
 		tok = 0
+	case '=':
+		if l.s.Peek() == '=' {
+			l.s.Scan()
+			tok = eqeq
+		} else {
+			tok = int(i)
+		}
+	case '!':
+		if l.s.Peek() == '=' {
+			l.s.Scan()
+			tok = neq
+		} else {
+			tok = int(i)
+		}
+	case '<':
+		if l.s.Peek() == '=' {
+			l.s.Scan()
+			tok = le
+		} else {
+			tok = int(i)
+		}
+	case '>':
+		if l.s.Peek() == '=' {
+			l.s.Scan()
+			tok = ge
+		} else {
+			tok = int(i)
+		}
+	case '&':
+		if l.s.Peek() == '&' {
+			l.s.Scan()
+			tok = andand
+		} else {
+			tok = int(i)
+		}
+	case '|':
+		if l.s.Peek() == '|' {
+			l.s.Scan()
+			tok = oror
+		} else {
+			tok = int(i)
+		}
 	default:
 		tok = int(i)
 	}

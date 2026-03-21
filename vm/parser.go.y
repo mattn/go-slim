@@ -14,7 +14,16 @@ package vm
 %type<expr> expr
 %type<exprs> exprs
 %token<str> ident
-%token<lit> lit cfor in cyield
+%token<lit> lit cfor in cyield cif celsif celse cunless
+%token eqeq neq le ge andand oror
+
+%left oror
+%left andand
+%left eqeq neq
+%left '<' '>' le ge
+%left '+' '-'
+%left '*' '/'
+%right '!'
 
 %%
 
@@ -33,6 +42,22 @@ stmt :  cfor ident in expr
      | cyield
      {
        yylex.(*Lexer).e = &YieldExpr{}
+     }
+     | cif expr
+     {
+       yylex.(*Lexer).e = &IfExpr{Cond: $2}
+     }
+     | celsif expr
+     {
+       yylex.(*Lexer).e = &IfExpr{Cond: $2}
+     }
+     | celse
+     {
+       yylex.(*Lexer).e = &IfExpr{}
+     }
+     | cunless expr
+     {
+       yylex.(*Lexer).e = &IfExpr{Cond: $2, Neg: true}
      }
      | expr
      {
@@ -62,6 +87,10 @@ expr : lit
      {
        $$ = $2
      }
+     | '!' expr
+     {
+       $$ = &NotExpr{$2}
+     }
      | expr '+' expr
      {
        $$ = &BinOpExpr{"+", $1, $3}
@@ -77,6 +106,38 @@ expr : lit
      | expr '/' expr
      {
        $$ = &BinOpExpr{"/", $1, $3}
+     }
+     | expr eqeq expr
+     {
+       $$ = &BinOpExpr{"==", $1, $3}
+     }
+     | expr neq expr
+     {
+       $$ = &BinOpExpr{"!=", $1, $3}
+     }
+     | expr '<' expr
+     {
+       $$ = &BinOpExpr{"<", $1, $3}
+     }
+     | expr '>' expr
+     {
+       $$ = &BinOpExpr{">", $1, $3}
+     }
+     | expr le expr
+     {
+       $$ = &BinOpExpr{"<=", $1, $3}
+     }
+     | expr ge expr
+     {
+       $$ = &BinOpExpr{">=", $1, $3}
+     }
+     | expr andand expr
+     {
+       $$ = &BinOpExpr{"&&", $1, $3}
+     }
+     | expr oror expr
+     {
+       $$ = &BinOpExpr{"||", $1, $3}
      }
      | ident '(' exprs ')'
      {

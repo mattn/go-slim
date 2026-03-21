@@ -599,6 +599,56 @@ func TestDefineWithLayoutFS(t *testing.T) {
 	}
 }
 
+func TestIf(t *testing.T) {
+	tmpl, err := ParseFile("testdata/test_if.slim")
+	if err != nil {
+		t.Fatal(err)
+	}
+	tests := []struct {
+		x      int
+		expect string
+	}{
+		{1, "<p>positive</p>\n"},
+		{0, "<p>zero</p>\n"},
+		{-1, "<p>negative</p>\n"},
+	}
+	for _, tt := range tests {
+		var buf bytes.Buffer
+		err = tmpl.Execute(&buf, Values{"x": tt.x})
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := buf.String()
+		if got != tt.expect {
+			t.Fatalf("x=%d: expected %q but %q", tt.x, tt.expect, got)
+		}
+	}
+}
+
+func TestUnless(t *testing.T) {
+	tmpl, err := ParseFile("testdata/test_unless.slim")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var buf bytes.Buffer
+	err = tmpl.Execute(&buf, Values{"hidden": false})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if buf.String() != "<p>visible</p>\n" {
+		t.Fatalf("expected visible, got %q", buf.String())
+	}
+
+	buf.Reset()
+	err = tmpl.Execute(&buf, Values{"hidden": true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if buf.String() != "" {
+		t.Fatalf("expected empty, got %q", buf.String())
+	}
+}
+
 func TestUnnamedYield(t *testing.T) {
 	tmpl, err := ParseFile("testdata/test_page_yield.slim")
 	if err != nil {

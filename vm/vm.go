@@ -30,6 +30,38 @@ func (v *VM) Get(n string) (interface{}, bool) {
 	return val, ok
 }
 
+// IsTrue returns true if the value is truthy.
+func IsTrue(v interface{}) bool {
+	if v == nil {
+		return false
+	}
+	switch vv := v.(type) {
+	case bool:
+		return vv
+	case int:
+		return vv != 0
+	case int32:
+		return vv != 0
+	case int64:
+		return vv != 0
+	case float32:
+		return vv != 0
+	case float64:
+		return vv != 0
+	case string:
+		return vv != ""
+	default:
+		rv := reflect.ValueOf(v)
+		switch rv.Kind() {
+		case reflect.Slice, reflect.Array, reflect.Map:
+			return rv.Len() > 0
+		case reflect.Ptr, reflect.Interface:
+			return !rv.IsNil()
+		}
+		return true
+	}
+}
+
 func deref(rv reflect.Value) (reflect.Value, error) {
 loop:
 	for {
@@ -65,7 +97,42 @@ func (v *VM) Eval(expr Expr) (interface{}, error) {
 		return nil, errors.New("invalid token: " + t.Name)
 	case *LitExpr:
 		return t.Value, nil
+	case *NotExpr:
+		val, err := v.Eval(t.Expr)
+		if err != nil {
+			return nil, err
+		}
+		return !IsTrue(val), nil
 	case *BinOpExpr:
+		// Short-circuit logical operators
+		if t.Op == "&&" {
+			lhs, err := v.Eval(t.LHS)
+			if err != nil {
+				return nil, err
+			}
+			if !IsTrue(lhs) {
+				return false, nil
+			}
+			rhs, err := v.Eval(t.RHS)
+			if err != nil {
+				return nil, err
+			}
+			return IsTrue(rhs), nil
+		}
+		if t.Op == "||" {
+			lhs, err := v.Eval(t.LHS)
+			if err != nil {
+				return nil, err
+			}
+			if IsTrue(lhs) {
+				return true, nil
+			}
+			rhs, err := v.Eval(t.RHS)
+			if err != nil {
+				return nil, err
+			}
+			return IsTrue(rhs), nil
+		}
 		lhs, err := v.Eval(t.LHS)
 		if err != nil {
 			return nil, err
@@ -74,11 +141,27 @@ func (v *VM) Eval(expr Expr) (interface{}, error) {
 		if err != nil {
 			return nil, err
 		}
+		// Comparison operators
+		switch t.Op {
+		case "==":
+			return fmt.Sprint(lhs) == fmt.Sprint(rhs), nil
+		case "!=":
+			return fmt.Sprint(lhs) != fmt.Sprint(rhs), nil
+		}
 		switch vt := lhs.(type) {
 		case string:
+			rs := fmt.Sprint(rhs)
 			switch t.Op {
 			case "+":
-				return vt + fmt.Sprint(rhs), nil
+				return vt + rs, nil
+			case "<":
+				return vt < rs, nil
+			case ">":
+				return vt > rs, nil
+			case "<=":
+				return vt <= rs, nil
+			case ">=":
+				return vt >= rs, nil
 			}
 			return nil, errors.New("unknown operator")
 		case int, int32, int64:
@@ -102,6 +185,14 @@ func (v *VM) Eval(expr Expr) (interface{}, error) {
 					return nil, errors.New("division by zero")
 				}
 				return li / ri, nil
+			case "<":
+				return li < ri, nil
+			case ">":
+				return li > ri, nil
+			case "<=":
+				return li <= ri, nil
+			case ">=":
+				return li >= ri, nil
 			}
 			return nil, errors.New("unknown operator")
 		case float32, float64:
@@ -122,7 +213,17 @@ func (v *VM) Eval(expr Expr) (interface{}, error) {
 				return lf * rf, nil
 			case "/":
 				return lf / rf, nil
+			case "<":
+				return lf < rf, nil
+			case ">":
+				return lf > rf, nil
+			case "<=":
+				return lf <= rf, nil
+			case ">=":
+				return lf >= rf, nil
 			}
+			return nil, errors.New("unknown operator")
+		case bool:
 			return nil, errors.New("unknown operator")
 		default:
 			return nil, errors.New("invalid type conversion")

@@ -148,6 +148,82 @@ func bytesRepeat(out io.Writer, b []byte, count int) {
 	}
 }
 
+func isIfExpr(v *vm.VM, n *Node) (*vm.IfExpr, bool) {
+	if n.Expr == "" {
+		return nil, false
+	}
+	expr, err := v.Compile(n.Expr)
+	if err != nil {
+		return nil, false
+	}
+	ie, ok := expr.(*vm.IfExpr)
+	return ie, ok
+}
+
+func collectIfChain(n *Node, v *vm.VM) (branches []struct {
+	ie   *vm.IfExpr
+	body []*Node
+}) {
+	ie, ok := isIfExpr(v, n)
+	if !ok {
+		return nil
+	}
+	var body []*Node
+	var chain []*Node
+	for _, c := range n.Children {
+		if _, ok := isIfExpr(v, c); ok {
+			chain = append(chain, c)
+		} else {
+			body = append(body, c)
+		}
+	}
+	branches = append(branches, struct {
+		ie   *vm.IfExpr
+		body []*Node
+	}{ie, body})
+	for _, c := range chain {
+		branches = append(branches, collectIfChain(c, v)...)
+	}
+	return
+}
+
+func evalIfChain(t *Template, out io.Writer, v *vm.VM, n *Node, indent int) error {
+	branches := collectIfChain(n, v)
+	for _, br := range branches {
+		// else: no condition
+		if br.ie.Cond == nil {
+			return printChildren(t, out, v, br.body, indent)
+		}
+		result, err := v.Eval(br.ie.Cond)
+		if err != nil {
+			return err
+		}
+		cond := vm.IsTrue(result)
+		if br.ie.Neg {
+			cond = !cond
+		}
+		if cond {
+			return printChildren(t, out, v, br.body, indent)
+		}
+	}
+	return nil
+}
+
+func printChildren(t *Template, out io.Writer, v *vm.VM, children []*Node, indent int) error {
+	for _, c := range children {
+		if _, ok := isIfExpr(v, c); ok {
+			if err := evalIfChain(t, out, v, c, indent); err != nil {
+				return err
+			}
+			continue
+		}
+		if err := printNode(t, out, v, c, indent); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func printNode(t *Template, out io.Writer, v *vm.VM, n *Node, indent int) error {
 	// Handle yield before any tag processing
 	if n.Expr != "" {
@@ -171,11 +247,7 @@ func printNode(t *Template, out io.Writer, v *vm.VM, n *Node, indent int) error 
 		}
 	}
 	if n.Name == "" && n.Expr == "" {
-		for _, c := range n.Children {
-			if err := printNode(t, out, v, c, indent); err != nil {
-				return err
-			}
-		}
+		return printChildren(t, out, v, n.Children, indent)
 	} else if n.Name == "/" {
 		return nil
 	} else if n.Name == "/!" {
@@ -274,10 +346,8 @@ func printNode(t *Template, out io.Writer, v *vm.VM, n *Node, indent int) error 
 							} else {
 								v.Set(fe.LHS1, x)
 							}
-							for _, c := range n.Children {
-								if err := printNode(t, out, v, c, indent); err != nil {
-									return err
-								}
+							if err := printChildren(t, out, v, n.Children, indent); err != nil {
+								return err
 							}
 							i++
 						}
@@ -291,10 +361,8 @@ func printNode(t *Template, out io.Writer, v *vm.VM, n *Node, indent int) error 
 							} else {
 								v.Set(fe.LHS1, x)
 							}
-							for _, c := range n.Children {
-								if err := printNode(t, out, v, c, indent); err != nil {
-									return err
-								}
+							if err := printChildren(t, out, v, n.Children, indent); err != nil {
+								return err
 							}
 						}
 					}
@@ -319,10 +387,8 @@ func printNode(t *Template, out io.Writer, v *vm.VM, n *Node, indent int) error 
 				out.Write([]byte(text))
 			} else if len(n.Children) > 0 {
 				out.Write(cNewLine)
-				for _, c := range n.Children {
-					if err := printNode(t, out, v, c, indent+1); err != nil {
-						return err
-					}
+				if err := printChildren(t, out, v, n.Children, indent+1); err != nil {
+					return err
 				}
 				text, err := rubyInline(v, n.Text)
 				if err != nil {
