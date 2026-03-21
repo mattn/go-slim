@@ -773,31 +773,41 @@ func (t *Template) Execute(out io.Writer, value interface{}) error {
 	v := vm.New()
 
 	v.Set("render", func(name string) error {
+		var tt *Template
 		if t.fsys != nil {
 			name = path.Join(t.dir, name)
-			if tt, ok := t.inner[name]; ok {
-				return tt.execute(v, out, value)
+			if cached, ok := t.inner[name]; ok {
+				tt = cached
+			} else {
+				var err error
+				tt, err = ParseFS(t.fsys, name)
+				if err != nil {
+					return err
+				}
+				t.inner[name] = tt
 			}
-			tt, err := ParseFS(t.fsys, name)
-			if err != nil {
-				return err
+		} else {
+			if !filepath.IsAbs(name) {
+				name = filepath.Join(t.dir, name)
 			}
-			t.inner[name] = tt
-			return tt.execute(v, out, value)
-		}
-		if !filepath.IsAbs(name) {
-			name = filepath.Join(t.dir, name)
-		}
-		if tt, ok := t.inner[name]; ok {
+			if cached, ok := t.inner[name]; ok {
+				tt = cached
+			} else {
+				var err error
+				tt, err = ParseFile(name)
+				if err != nil {
+					return err
+				}
+				t.inner[name] = tt
+			}
 			tt.dir = filepath.Dir(name)
-			return tt.execute(v, out, value)
 		}
-		tt, err := ParseFile(name)
-		if err != nil {
-			return err
+		// Inherit blocks from the calling template
+		for k, b := range t.blocks {
+			if _, exists := tt.blocks[k]; !exists {
+				tt.blocks[k] = b
+			}
 		}
-		t.inner[name] = tt
-		tt.dir = filepath.Dir(name)
 		return tt.execute(v, out, value)
 	})
 
