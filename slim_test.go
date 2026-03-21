@@ -739,6 +739,31 @@ func TestWrappedAttributes(t *testing.T) {
 	}
 }
 
+func TestSelfClose(t *testing.T) {
+	tests := []struct {
+		in     string
+		expect string
+	}{
+		{"div/", "<div/>\n"},
+		{"custom-tag/", "<custom-tag/>\n"},
+	}
+	for _, tt := range tests {
+		tmpl, err := Parse(strings.NewReader(tt.in))
+		if err != nil {
+			t.Fatalf("parse %q: %v", tt.in, err)
+		}
+		var buf bytes.Buffer
+		err = tmpl.Execute(&buf, nil)
+		if err != nil {
+			t.Fatalf("exec %q: %v", tt.in, err)
+		}
+		got := buf.String()
+		if got != tt.expect {
+			t.Fatalf("%q: expected %q but %q", tt.in, tt.expect, got)
+		}
+	}
+}
+
 func TestWhitespaceControl(t *testing.T) {
 	tests := []struct {
 		in     string

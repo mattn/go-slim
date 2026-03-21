@@ -98,6 +98,7 @@ type Node struct {
 	Raw        bool
 	TrimOuter  bool // > remove outer whitespace
 	TrimInner  bool // < remove inner whitespace
+	SelfClose  bool // / explicit self-closing tag
 	Indent   int
 }
 
@@ -312,7 +313,7 @@ func printNode(t *Template, out io.Writer, v *vm.VM, n *Node, indent int) error 
 				}
 			}
 		}
-		if !isEmptyElement(n.Name) {
+		if !isEmptyElement(n.Name) && !n.SelfClose {
 			if n.Name != "" {
 				out.Write(cGreaterThan)
 			}
@@ -633,6 +634,11 @@ func Parse(in io.Reader) (*Template, error) {
 
 				node.Name = tag
 			case sTag:
+				if r == '/' {
+					node.Name = tag
+					node.SelfClose = true
+					break
+				}
 				if r == '>' {
 					if tag != "" {
 						node.Name = tag
