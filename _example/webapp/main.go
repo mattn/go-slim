@@ -19,7 +19,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	t.SetLayout("view/layout.slim")
+	t.SetLayout("layout.slim")
 
 	var m sync.RWMutex
 	values := []string{}
