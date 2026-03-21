@@ -565,10 +565,10 @@ func Parse(in io.Reader) (*Template, error) {
 			case sAttrKey:
 				if eol {
 					aname += string(r)
-					if avalue != "" {
-						node.Attr = append(node.Attr, Attr{Name: strings.TrimSpace(aname), Value: ""})
-					} else {
+					if avalue == "" {
 						node.Text = strings.TrimSpace(aname)
+					} else {
+						node.Attr = append(node.Attr, Attr{Name: strings.TrimSpace(aname), Value: ""})
 					}
 					break
 				}
