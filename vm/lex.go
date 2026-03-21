@@ -42,7 +42,7 @@ func (l *Lexer) Lex(v *yySymType) int {
 		}
 	case scanner.Float:
 		tok = lit
-		v.lit, _ = strconv.ParseFloat(l.s.TokenText(), 64)
+		v.lit, err = strconv.ParseFloat(l.s.TokenText(), 64)
 		if err != nil {
 			return -1
 		}
