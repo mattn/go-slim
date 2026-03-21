@@ -599,6 +599,24 @@ func TestDefineWithLayoutFS(t *testing.T) {
 	}
 }
 
+func TestUnnamedYield(t *testing.T) {
+	tmpl, err := ParseFile("testdata/test_page_yield.slim")
+	if err != nil {
+		t.Fatal(err)
+	}
+	tmpl.SetLayout("test_layout_yield.slim")
+	var buf bytes.Buffer
+	err = tmpl.Execute(&buf, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	expect := readFile(t, "testdata/test_page_yield.html")
+	got := buf.String()
+	if expect != got {
+		t.Fatalf("expected %v but %v", expect, got)
+	}
+}
+
 func TestYieldUndefined(t *testing.T) {
 	tmpl, err := Parse(strings.NewReader(`= yield notexist`))
 	if err != nil {

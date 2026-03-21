@@ -156,6 +156,9 @@ func printNode(t *Template, out io.Writer, v *vm.VM, n *Node, indent int) error 
 			if ye, ok := expr.(*vm.YieldExpr); ok {
 				block, ok := t.blocks[ye.Name]
 				if !ok {
+					if ye.Name == "" {
+						return nil
+					}
 					return fmt.Errorf("undefined block: %s", ye.Name)
 				}
 				for _, c := range block.Children {
@@ -717,9 +720,13 @@ func Parse(in io.Reader) (*Template, error) {
 	for name, body := range defineBlocks {
 		bt, err := Parse(strings.NewReader(body))
 		if err != nil {
-			return nil, fmt.Errorf("define %s: %w", name, err)
+			return nil, fmt.Errorf("content_for %s: %w", name, err)
 		}
 		blocks[name] = bt.root
+	}
+	// Store the main body (non-content_for parts) as the unnamed block
+	if len(root.Children) > 0 {
+		blocks[""] = root
 	}
 
 	return &Template{
