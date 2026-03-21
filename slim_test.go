@@ -739,6 +739,31 @@ func TestWrappedAttributes(t *testing.T) {
 	}
 }
 
+func TestIDClassWithAttrs(t *testing.T) {
+	tests := []struct {
+		in     string
+		expect string
+	}{
+		{`form#form-box method="post"`, "<form id=\"form-box\" method=\"post\">\n</form>\n"},
+		{`label.form-label for="name" Name`, "<label class=\"form-label\" for=\"name\">Name</label>\n"},
+	}
+	for _, tt := range tests {
+		tmpl, err := Parse(strings.NewReader(tt.in))
+		if err != nil {
+			t.Fatalf("parse %q: %v", tt.in, err)
+		}
+		var buf bytes.Buffer
+		err = tmpl.Execute(&buf, nil)
+		if err != nil {
+			t.Fatalf("exec %q: %v", tt.in, err)
+		}
+		got := buf.String()
+		if got != tt.expect {
+			t.Fatalf("%q: expected %q but %q", tt.in, tt.expect, got)
+		}
+	}
+}
+
 func TestSelfClose(t *testing.T) {
 	tests := []struct {
 		in     string

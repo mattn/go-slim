@@ -714,7 +714,11 @@ func Parse(in io.Reader) (*Template, error) {
 				default:
 					if !isUnquotedAttributeValue(r) { // FIXME
 						node.ID = id
-						st = sEq
+						if unicode.IsSpace(r) {
+							st = sAttrKey
+						} else {
+							st = sEq
+						}
 					} else {
 						id += string(r)
 					}
@@ -743,7 +747,11 @@ func Parse(in io.Reader) (*Template, error) {
 						if class != "" {
 							node.Class = append(node.Class, class)
 						}
-						st = sEq
+						if unicode.IsSpace(r) {
+							st = sAttrKey
+						} else {
+							st = sEq
+						}
 					} else {
 						class += string(r)
 					}
