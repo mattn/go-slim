@@ -130,6 +130,9 @@ func (v *VM) Eval(expr Expr) (interface{}, error) {
 	case *CallExpr:
 		if f, ok := v.env[t.Name]; ok {
 			rf := reflect.ValueOf(f)
+			if rf.Kind() != reflect.Func {
+				return nil, fmt.Errorf("not a function: %s", t.Name)
+			}
 			args := []reflect.Value{}
 			for _, arg := range t.Exprs {
 				arg, err := v.Eval(arg)
