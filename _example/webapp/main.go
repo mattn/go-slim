@@ -1,6 +1,7 @@
 package main
 
 import (
+	"embed"
 	"log"
 	"net/http"
 	"strings"
@@ -10,12 +11,15 @@ import (
 	"github.com/mattn/go-slim"
 )
 
+//go:embed view/*
+var views embed.FS
+
 func main() {
-	t, err := slim.ParseFile("view/index.slim")
+	t, err := slim.ParseFS(views, "view/index.slim")
 	if err != nil {
 		log.Fatal(err)
 	}
-	t.SetLayout("layout.slim")
+	t.SetLayout("view/layout.slim")
 
 	var m sync.RWMutex
 	values := []string{}
