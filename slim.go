@@ -33,6 +33,8 @@ const (
 	sText
 	sComment
 	sExpr
+	sWrapAttr
+	sWrapValue
 )
 
 var (
@@ -654,7 +656,10 @@ func Parse(in io.Reader) (*Template, error) {
 						st = sText
 						break break_st
 					}
-					if unicode.IsSpace(r) {
+					if r == '(' {
+						node.Name = tag
+						st = sWrapAttr
+					} else if unicode.IsSpace(r) {
 						node.Name = tag
 						st = sAttrKey
 					} else {
@@ -673,6 +678,9 @@ func Parse(in io.Reader) (*Template, error) {
 				case '.':
 					node.ID = id
 					st = sClass
+				case '(':
+					node.ID = id
+					st = sWrapAttr
 				default:
 					if !isUnquotedAttributeValue(r) { // FIXME
 						node.ID = id
@@ -695,6 +703,11 @@ func Parse(in io.Reader) (*Template, error) {
 						node.Class = append(node.Class, class)
 						class = ""
 					}
+				case '(':
+					if class != "" {
+						node.Class = append(node.Class, class)
+					}
+					st = sWrapAttr
 				default:
 					if !isUnquotedAttributeValue(r) { // FIXME
 						if class != "" {
@@ -766,6 +779,47 @@ func Parse(in io.Reader) (*Template, error) {
 			case sText:
 				if node.Text != "" || !unicode.IsSpace(r) {
 					node.Text += string(r)
+				}
+			case sWrapAttr:
+				if r == ')' {
+					if strings.TrimSpace(aname) != "" {
+						node.Attr = append(node.Attr, Attr{Name: strings.TrimSpace(aname), Value: ""})
+						aname = ""
+					}
+					st = sAttrKey
+					break
+				}
+				if unicode.IsSpace(r) {
+					break
+				}
+				if r == '=' {
+					st = sWrapValue
+				} else {
+					aname += string(r)
+				}
+			case sWrapValue:
+				if r == ')' {
+					if avalue != "" {
+						if len(avalue) >= 2 && avalue[0] == '"' && avalue[len(avalue)-1] == '"' {
+							avalue = avalue[1 : len(avalue)-1]
+						}
+						node.Attr = append(node.Attr, Attr{Name: strings.TrimSpace(aname), Value: avalue})
+					}
+					aname = ""
+					avalue = ""
+					st = sAttrKey
+					break
+				}
+				if avalue != "" && unicode.IsSpace(r) && (avalue[0] != '"' || avalue[len(avalue)-1] == '"') {
+					if len(avalue) >= 2 && avalue[0] == '"' && avalue[len(avalue)-1] == '"' {
+						avalue = avalue[1 : len(avalue)-1]
+					}
+					node.Attr = append(node.Attr, Attr{Name: strings.TrimSpace(aname), Value: avalue})
+					aname = ""
+					avalue = ""
+					st = sWrapAttr
+				} else {
+					avalue += string(r)
 				}
 			}
 		}

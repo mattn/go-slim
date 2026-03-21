@@ -713,6 +713,32 @@ func TestIDAndClass(t *testing.T) {
 	}
 }
 
+func TestWrappedAttributes(t *testing.T) {
+	tests := []struct {
+		in     string
+		expect string
+	}{
+		{`a(href="/" class="link") Home`, "<a href=\"/\" class=\"link\">Home</a>\n"},
+		{`input(type="text" name="q" disabled)`, "<input type=\"text\" name=\"q\" disabled/>\n"},
+		{`div#foo.bar(data-x="1")`, "<div id=\"foo\" class=\"bar\" data-x=\"1\">\n</div>\n"},
+	}
+	for _, tt := range tests {
+		tmpl, err := Parse(strings.NewReader(tt.in))
+		if err != nil {
+			t.Fatalf("parse %q: %v", tt.in, err)
+		}
+		var buf bytes.Buffer
+		err = tmpl.Execute(&buf, nil)
+		if err != nil {
+			t.Fatalf("exec %q: %v", tt.in, err)
+		}
+		got := buf.String()
+		if got != tt.expect {
+			t.Fatalf("%q: expected %q but %q", tt.in, tt.expect, got)
+		}
+	}
+}
+
 func TestIsAttributeValue(t *testing.T) {
 	tests := []struct {
 		in     rune
