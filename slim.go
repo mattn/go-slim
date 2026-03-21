@@ -223,6 +223,26 @@ func printNode(t *Template, out io.Writer, v *vm.VM, n *Node, indent int) error 
 				if err != nil {
 					return err
 				}
+				if ce, ok := expr.(*vm.CallExpr); ok && ce.Name == "yield" {
+					if len(ce.Exprs) != 1 {
+						return errors.New("yield requires exactly 1 argument")
+					}
+					nameVal, err := v.Eval(ce.Exprs[0])
+					if err != nil {
+						return err
+					}
+					blockName := fmt.Sprint(nameVal)
+					block, ok := t.blocks[blockName]
+					if !ok {
+						return fmt.Errorf("undefined block: %s", blockName)
+					}
+					for _, c := range block.Children {
+						if err := printNode(t, out, v, c, indent); err != nil {
+							return err
+						}
+					}
+					return nil
+				}
 				fe, ok := expr.(*vm.ForExpr)
 				if ok {
 					rhs, err := v.Eval(fe.RHS)
@@ -345,6 +365,7 @@ type Template struct {
 	root     *Node
 	renderer map[string]Renderer
 	inner    map[string]*Template
+	blocks   map[string]*Node
 	fm       Funcs
 	dir      string
 	fsys     fs.FS
@@ -386,12 +407,45 @@ var defaultRenderers = map[string]Renderer{
 	"css":        cssRenderer,
 }
 
+var definePattern = regexp.MustCompile(`^(\s*)-\s+define\s+(\w+)\s*$`)
+
+func splitDefines(in io.Reader) (string, map[string]string) {
+	scanner := bufio.NewScanner(in)
+	blocks := map[string]string{}
+	var main []string
+	var defName string
+	defIndent := -1
+	for scanner.Scan() {
+		line := scanner.Text()
+		if m := definePattern.FindStringSubmatch(line); m != nil {
+			defName = m[2]
+			defIndent = len(m[1])
+			blocks[defName] = ""
+			continue
+		}
+		if defName != "" {
+			// Lines indented deeper than the define belong to the block
+			trimmed := strings.TrimLeft(line, " \t")
+			indent := len(line) - len(trimmed)
+			if trimmed == "" || indent > defIndent {
+				blocks[defName] += line[defIndent:] + "\n"
+				continue
+			}
+			defName = ""
+			defIndent = -1
+		}
+		main = append(main, line)
+	}
+	return strings.Join(main, "\n"), blocks
+}
+
 // Parse parse content with reading from reader.
 func Parse(in io.Reader) (*Template, error) {
 	if in == nil {
 		return nil, errors.New("invalid input")
 	}
-	scanner := bufio.NewScanner(in)
+	body, defineBlocks := splitDefines(in)
+	scanner := bufio.NewScanner(strings.NewReader(body))
 	root := new(Node)
 	node := root
 	stk := []stack{}
@@ -660,10 +714,20 @@ func Parse(in io.Reader) (*Template, error) {
 	if ff, ok := in.(*os.File); ok {
 		dir, _ = filepath.Abs(filepath.Dir(ff.Name()))
 	}
+	blocks := map[string]*Node{}
+	for name, body := range defineBlocks {
+		bt, err := Parse(strings.NewReader(body))
+		if err != nil {
+			return nil, fmt.Errorf("define %s: %w", name, err)
+		}
+		blocks[name] = bt.root
+	}
+
 	return &Template{
 		root:     root,
 		renderer: newrenderer,
 		inner:    map[string]*Template{},
+		blocks:   blocks,
 		fm:       nil,
 		dir:      dir,
 	}, nil
