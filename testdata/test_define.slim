@@ -1,8 +1,8 @@
-- define header
+- content_for header
   h1 Hello
-- define footer
+- content_for footer
   p Goodbye
 div
-  - yield("header")
+  = yield header
   p Content
-  - yield("footer")
+  = yield footer

@@ -149,6 +149,24 @@ func bytesRepeat(out io.Writer, b []byte, count int) {
 }
 
 func printNode(t *Template, out io.Writer, v *vm.VM, n *Node, indent int) error {
+	// Handle yield before any tag processing
+	if n.Expr != "" {
+		expr, err := v.Compile(n.Expr)
+		if err == nil {
+			if ye, ok := expr.(*vm.YieldExpr); ok {
+				block, ok := t.blocks[ye.Name]
+				if !ok {
+					return fmt.Errorf("undefined block: %s", ye.Name)
+				}
+				for _, c := range block.Children {
+					if err := printNode(t, out, v, c, indent); err != nil {
+						return err
+					}
+				}
+				return nil
+			}
+		}
+	}
 	if n.Name == "" && n.Expr == "" {
 		for _, c := range n.Children {
 			if err := printNode(t, out, v, c, indent); err != nil {
@@ -222,26 +240,6 @@ func printNode(t *Template, out io.Writer, v *vm.VM, n *Node, indent int) error 
 				expr, err := v.Compile(n.Expr)
 				if err != nil {
 					return err
-				}
-				if ce, ok := expr.(*vm.CallExpr); ok && ce.Name == "yield" {
-					if len(ce.Exprs) != 1 {
-						return errors.New("yield requires exactly 1 argument")
-					}
-					nameVal, err := v.Eval(ce.Exprs[0])
-					if err != nil {
-						return err
-					}
-					blockName := fmt.Sprint(nameVal)
-					block, ok := t.blocks[blockName]
-					if !ok {
-						return fmt.Errorf("undefined block: %s", blockName)
-					}
-					for _, c := range block.Children {
-						if err := printNode(t, out, v, c, indent); err != nil {
-							return err
-						}
-					}
-					return nil
 				}
 				fe, ok := expr.(*vm.ForExpr)
 				if ok {
@@ -407,7 +405,7 @@ var defaultRenderers = map[string]Renderer{
 	"css":        cssRenderer,
 }
 
-var definePattern = regexp.MustCompile(`^(\s*)-\s+define\s+(\w+)\s*$`)
+var contentForPattern = regexp.MustCompile(`^(\s*)-\s+content_for\s+:?(\w+)\s*$`)
 
 func splitDefines(in io.Reader) (string, map[string]string) {
 	scanner := bufio.NewScanner(in)
@@ -417,7 +415,7 @@ func splitDefines(in io.Reader) (string, map[string]string) {
 	defIndent := -1
 	for scanner.Scan() {
 		line := scanner.Text()
-		if m := definePattern.FindStringSubmatch(line); m != nil {
+		if m := contentForPattern.FindStringSubmatch(line); m != nil {
 			defName = m[2]
 			defIndent = len(m[1])
 			blocks[defName] = ""

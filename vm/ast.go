@@ -28,6 +28,11 @@ type ForExpr struct {
 	RHS  Expr
 }
 
+// YieldExpr is a type for indicating yield block.
+type YieldExpr struct {
+	Name string
+}
+
 // CallExpr is a type for indicating calling functions.
 type CallExpr struct {
 	Name  string

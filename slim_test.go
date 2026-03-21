@@ -581,7 +581,7 @@ func TestDefineWithRender(t *testing.T) {
 }
 
 func TestYieldUndefined(t *testing.T) {
-	tmpl, err := Parse(strings.NewReader(`= yield("notexist")`))
+	tmpl, err := Parse(strings.NewReader(`= yield notexist`))
 	if err != nil {
 		t.Fatal(err)
 	}

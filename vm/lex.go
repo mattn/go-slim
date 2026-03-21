@@ -31,6 +31,8 @@ func (l *Lexer) Lex(v *yySymType) int {
 			tok = cfor
 		case "in":
 			tok = in
+		case "yield":
+			tok = cyield
 		default:
 			tok = ident
 		}

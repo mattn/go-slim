@@ -14,7 +14,7 @@ package vm
 %type<expr> expr
 %type<exprs> exprs
 %token<str> ident
-%token<lit> lit cfor in
+%token<lit> lit cfor in cyield
 
 %%
 
@@ -26,6 +26,14 @@ stmt :  cfor ident in expr
      {
        yylex.(*Lexer).e = &ForExpr{$2, $4, $6}
      }
+     | cyield ident
+     {
+       yylex.(*Lexer).e = &YieldExpr{$2}
+     }
+     | cyield
+     {
+       yylex.(*Lexer).e = &YieldExpr{}
+     }
      | expr
      {
        yylex.(*Lexer).e = $1
@@ -36,7 +44,7 @@ exprs :
       {
           $$ = nil
       }
-      | expr 
+      | expr
       {
           $$ = []Expr{$1}
       }
