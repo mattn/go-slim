@@ -140,6 +140,53 @@ func TestEachChan(t *testing.T) {
 	}
 }
 
+func TestEachArrayIndex(t *testing.T) {
+	tmpl, err := ParseFile("testdata/test_each_index.slim")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var buf bytes.Buffer
+	err = tmpl.Execute(&buf, Values{
+		"foo": []string{"a", "b", "c"},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	expect := readFile(t, "testdata/test_each_index.html")
+	got := buf.String()
+	if expect != got {
+		t.Fatalf("expected %v but %v", expect, got)
+	}
+}
+
+func TestEachChanIndex(t *testing.T) {
+	tmpl, err := ParseFile("testdata/test_each_index.slim")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	ch := make(chan string)
+	go func() {
+		for _, a := range []string{"a", "b", "c"} {
+			ch <- a
+		}
+		close(ch)
+	}()
+
+	var buf bytes.Buffer
+	err = tmpl.Execute(&buf, Values{
+		"foo": ch,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	expect := readFile(t, "testdata/test_each_index.html")
+	got := buf.String()
+	if expect != got {
+		t.Fatalf("expected %v but %v", expect, got)
+	}
+}
+
 func TestFunc(t *testing.T) {
 	tmpl, err := ParseFile("testdata/test_func.slim")
 	if err != nil {

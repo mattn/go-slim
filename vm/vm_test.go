@@ -24,6 +24,49 @@ func (v *testStruct1) Itself() *testStruct1 {
 	return v
 }
 
+func TestFloatLiteral(t *testing.T) {
+	v := New()
+	expr, err := v.Compile(`3.14`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	r, err := v.Eval(expr)
+	if err != nil {
+		t.Fatal(err)
+	}
+	f, ok := r.(float64)
+	if !ok || f != 3.14 {
+		t.Fatalf("Expected %v, but %v", 3.14, r)
+	}
+}
+
+func TestDivisionByZero(t *testing.T) {
+	v := New()
+	v.Set("a", 10)
+	v.Set("b", 0)
+	expr, err := v.Compile(`a / b`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = v.Eval(expr)
+	if err == nil {
+		t.Fatal("expected division by zero error")
+	}
+}
+
+func TestCallNonFunction(t *testing.T) {
+	v := New()
+	v.Set("notfunc", 42)
+	expr, err := v.Compile(`notfunc()`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = v.Eval(expr)
+	if err == nil {
+		t.Fatal("expected error when calling non-function")
+	}
+}
+
 func TestInt(t *testing.T) {
 	v := New()
 	v.Set("foo", 1)
