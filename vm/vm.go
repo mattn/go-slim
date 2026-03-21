@@ -98,6 +98,9 @@ func (v *VM) Eval(expr Expr) (interface{}, error) {
 			case "*":
 				return li * ri, nil
 			case "/":
+				if ri == 0 {
+					return nil, errors.New("division by zero")
+				}
 				return li / ri, nil
 			}
 			return nil, errors.New("unknown operator")
