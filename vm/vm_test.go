@@ -180,6 +180,268 @@ func TestCallNonFunction(t *testing.T) {
 	}
 }
 
+func TestIsTrue(t *testing.T) {
+	tests := []struct {
+		val    interface{}
+		expect bool
+	}{
+		{nil, false},
+		{true, true},
+		{false, false},
+		{0, false},
+		{1, true},
+		{int32(0), false},
+		{int32(1), true},
+		{int64(0), false},
+		{int64(1), true},
+		{float32(0), false},
+		{float32(1.5), true},
+		{float64(0), false},
+		{float64(1.5), true},
+		{"", false},
+		{"hello", true},
+		{[]int{}, false},
+		{[]int{1}, true},
+		{map[string]int{}, false},
+		{map[string]int{"a": 1}, true},
+	}
+	for _, tt := range tests {
+		got := IsTrue(tt.val)
+		if got != tt.expect {
+			t.Fatalf("IsTrue(%v): expected %v, got %v", tt.val, tt.expect, got)
+		}
+	}
+}
+
+func TestFloatArithmetic(t *testing.T) {
+	v := New()
+	v.Set("a", 3.0)
+	v.Set("b", 1.5)
+	tests := []struct {
+		expr   string
+		expect float64
+	}{
+		{"a + b", 4.5},
+		{"a - b", 1.5},
+		{"a * b", 4.5},
+		{"a / b", 2.0},
+	}
+	for _, tt := range tests {
+		expr, err := v.Compile(tt.expr)
+		if err != nil {
+			t.Fatalf("compile %q: %v", tt.expr, err)
+		}
+		r, err := v.Eval(expr)
+		if err != nil {
+			t.Fatalf("eval %q: %v", tt.expr, err)
+		}
+		f, ok := r.(float64)
+		if !ok || f != tt.expect {
+			t.Fatalf("%q: expected %v, got %v", tt.expr, tt.expect, r)
+		}
+	}
+}
+
+func TestFloatComparison(t *testing.T) {
+	v := New()
+	v.Set("a", 3.0)
+	tests := []struct {
+		expr   string
+		expect bool
+	}{
+		{"a < 4.0", true},
+		{"a > 2.0", true},
+		{"a <= 3.0", true},
+		{"a >= 3.0", true},
+	}
+	for _, tt := range tests {
+		expr, err := v.Compile(tt.expr)
+		if err != nil {
+			t.Fatalf("compile %q: %v", tt.expr, err)
+		}
+		r, err := v.Eval(expr)
+		if err != nil {
+			t.Fatalf("eval %q: %v", tt.expr, err)
+		}
+		got, ok := r.(bool)
+		if !ok || got != tt.expect {
+			t.Fatalf("%q: expected %v, got %v", tt.expr, tt.expect, r)
+		}
+	}
+}
+
+func TestStringComparison(t *testing.T) {
+	v := New()
+	v.Set("s", "hello")
+	tests := []struct {
+		expr   string
+		expect bool
+	}{
+		{`s == "hello"`, true},
+		{`s != "world"`, true},
+		{`s < "world"`, true},
+		{`s > "abc"`, true},
+		{`s <= "hello"`, true},
+		{`s >= "hello"`, true},
+	}
+	for _, tt := range tests {
+		expr, err := v.Compile(tt.expr)
+		if err != nil {
+			t.Fatalf("compile %q: %v", tt.expr, err)
+		}
+		r, err := v.Eval(expr)
+		if err != nil {
+			t.Fatalf("eval %q: %v", tt.expr, err)
+		}
+		got, ok := r.(bool)
+		if !ok || got != tt.expect {
+			t.Fatalf("%q: expected %v, got %v", tt.expr, tt.expect, r)
+		}
+	}
+}
+
+func TestStringConcat(t *testing.T) {
+	v := New()
+	v.Set("a", "hello")
+	v.Set("b", " world")
+	expr, err := v.Compile(`a + b`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	r, err := v.Eval(expr)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if r != "hello world" {
+		t.Fatalf("expected %q, got %v", "hello world", r)
+	}
+}
+
+func TestUnknownOperatorError(t *testing.T) {
+	v := New()
+	v.Set("a", true)
+	v.Set("b", true)
+	expr, err := v.Compile(`a + b`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = v.Eval(expr)
+	if err == nil {
+		t.Fatal("expected error for bool addition")
+	}
+}
+
+func TestMemberMap(t *testing.T) {
+	v := New()
+	v.Set("m", map[string]int{"x": 42})
+	expr, err := v.Compile(`m.x`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	r, err := v.Eval(expr)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if r != 42 {
+		t.Fatalf("expected 42, got %v", r)
+	}
+}
+
+func TestItemSlice(t *testing.T) {
+	v := New()
+	v.Set("arr", []string{"a", "b", "c"})
+	expr, err := v.Compile(`arr[1]`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	r, err := v.Eval(expr)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if r != "b" {
+		t.Fatalf("expected b, got %v", r)
+	}
+}
+
+func TestItemMap(t *testing.T) {
+	v := New()
+	v.Set("m", map[string]int{"key": 99})
+	expr, err := v.Compile(`m["key"]`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	r, err := v.Eval(expr)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if r != 99 {
+		t.Fatalf("expected 99, got %v", r)
+	}
+}
+
+func TestNilLiteral(t *testing.T) {
+	v := New()
+	expr, err := v.Compile(`nil`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	r, err := v.Eval(expr)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if r != nil {
+		t.Fatalf("expected nil, got %v", r)
+	}
+}
+
+func TestUnlessExpr(t *testing.T) {
+	v := New()
+	v.Set("x", false)
+	expr, err := v.Compile(`unless x`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ie, ok := expr.(*IfExpr)
+	if !ok {
+		t.Fatal("expected IfExpr")
+	}
+	if !ie.Neg {
+		t.Fatal("expected Neg=true for unless")
+	}
+}
+
+func TestCompileError(t *testing.T) {
+	v := New()
+	_, err := v.Compile(`+ +`)
+	if err == nil {
+		t.Fatal("expected syntax error")
+	}
+}
+
+func TestUndefinedIdent(t *testing.T) {
+	v := New()
+	expr, err := v.Compile(`unknown`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = v.Eval(expr)
+	if err == nil {
+		t.Fatal("expected error for undefined identifier")
+	}
+}
+
+func TestUndefinedFunc(t *testing.T) {
+	v := New()
+	expr, err := v.Compile(`nope()`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = v.Eval(expr)
+	if err == nil {
+		t.Fatal("expected error for undefined function")
+	}
+}
+
 func TestInt(t *testing.T) {
 	v := New()
 	v.Set("foo", 1)
