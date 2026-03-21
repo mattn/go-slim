@@ -15,6 +15,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	t.SetLayout("layout.slim")
 
 	var m sync.RWMutex
 	values := []string{}

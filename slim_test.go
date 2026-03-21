@@ -563,11 +563,30 @@ func TestDefineAndYield(t *testing.T) {
 	}
 }
 
-func TestDefineWithRender(t *testing.T) {
+func TestDefineWithLayout(t *testing.T) {
 	tmpl, err := ParseFile("testdata/test_define_render.slim")
 	if err != nil {
 		t.Fatal(err)
 	}
+	tmpl.SetLayout("test_define_layout.slim")
+	var buf bytes.Buffer
+	err = tmpl.Execute(&buf, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	expect := readFile(t, "testdata/test_define_render.html")
+	got := buf.String()
+	if expect != got {
+		t.Fatalf("expected %v but %v", expect, got)
+	}
+}
+
+func TestDefineWithLayoutFS(t *testing.T) {
+	tmpl, err := ParseFS(os.DirFS("testdata"), "test_define_render.slim")
+	if err != nil {
+		t.Fatal(err)
+	}
+	tmpl.SetLayout("test_define_layout.slim")
 	var buf bytes.Buffer
 	err = tmpl.Execute(&buf, nil)
 	if err != nil {

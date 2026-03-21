@@ -367,6 +367,7 @@ type Template struct {
 	fm       Funcs
 	dir      string
 	fsys     fs.FS
+	layout   string
 }
 
 // ParseFile parse content of fname.
@@ -736,6 +737,11 @@ func (t *Template) FuncMap(m Funcs) {
 	t.fm = m
 }
 
+// SetLayout set the layout template name.
+func (t *Template) SetLayout(name string) {
+	t.layout = name
+}
+
 // RegisterRenderer register custom render named with the name.
 func (t *Template) RegisterRenderer(name string, r Renderer) {
 	t.renderer[name] = r
@@ -800,14 +806,31 @@ func (t *Template) Execute(out io.Writer, value interface{}) error {
 			}
 			tt.dir = filepath.Dir(name)
 		}
-		// Inherit blocks from the calling template
-		for k, b := range t.blocks {
-			if _, exists := tt.blocks[k]; !exists {
-				tt.blocks[k] = b
-			}
-		}
 		return tt.execute(v, out, value)
 	})
+
+	if t.layout != "" {
+		var lt *Template
+		var err error
+		if t.fsys != nil {
+			name := path.Join(t.dir, t.layout)
+			lt, err = ParseFS(t.fsys, name)
+		} else {
+			name := t.layout
+			if !filepath.IsAbs(name) {
+				name = filepath.Join(t.dir, name)
+			}
+			lt, err = ParseFile(name)
+		}
+		if err != nil {
+			return err
+		}
+		for k, b := range t.blocks {
+			lt.blocks[k] = b
+		}
+		lt.fm = t.fm
+		return lt.execute(v, out, value)
+	}
 
 	return t.execute(v, out, value)
 }
