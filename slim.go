@@ -88,14 +88,16 @@ type Attr struct {
 
 // Node is a type for indicating tag.
 type Node struct {
-	Name     string
-	ID       string
-	Class    []string
-	Attr     []Attr
-	Text     string
-	Expr     string
-	Children []*Node
-	Raw      bool
+	Name       string
+	ID         string
+	Class      []string
+	Attr       []Attr
+	Text       string
+	Expr       string
+	Children   []*Node
+	Raw        bool
+	TrimOuter  bool // > remove outer whitespace
+	TrimInner  bool // < remove inner whitespace
 	Indent   int
 }
 
@@ -266,7 +268,9 @@ func printNode(t *Template, out io.Writer, v *vm.VM, n *Node, indent int) error 
 			out.Write([]byte(n.Name))
 			out.Write([]byte(" html"))
 		} else if n.Name != "" {
-			bytesRepeat(out, cSpace, indent*2)
+			if !n.TrimOuter {
+				bytesRepeat(out, cSpace, indent*2)
+			}
 			if strings.HasSuffix(n.Name, ":") {
 				name := n.Name[:len(n.Name)-1]
 				if en, ok := t.renderer[name]; ok {
@@ -388,7 +392,9 @@ func printNode(t *Template, out io.Writer, v *vm.VM, n *Node, indent int) error 
 				}
 				out.Write([]byte(text))
 			} else if len(n.Children) > 0 {
-				out.Write(cNewLine)
+				if !n.TrimInner {
+					out.Write(cNewLine)
+				}
 				if err := printChildren(t, out, v, n.Children, indent+1); err != nil {
 					return err
 				}
@@ -413,12 +419,16 @@ func printNode(t *Template, out io.Writer, v *vm.VM, n *Node, indent int) error 
 					name = n.Name[:len(n.Name)-1]
 				}
 
-				if cr {
+				if cr && !n.TrimInner {
 					bytesRepeat(out, cSpace, indent*2)
 				}
 				out.Write(cLessThanSlash)
 				out.Write([]byte(name))
-				out.Write(cGreaterThanNewLine)
+				if n.TrimOuter {
+					out.Write(cGreaterThan)
+				} else {
+					out.Write(cGreaterThanNewLine)
+				}
 			}
 		} else if doctype {
 			out.Write(cGreaterThanNewLine)
@@ -623,6 +633,20 @@ func Parse(in io.Reader) (*Template, error) {
 
 				node.Name = tag
 			case sTag:
+				if r == '>' {
+					if tag != "" {
+						node.Name = tag
+					}
+					node.TrimOuter = true
+					break
+				}
+				if r == '<' {
+					if tag != "" {
+						node.Name = tag
+					}
+					node.TrimInner = true
+					break
+				}
 				if eol {
 					tag += string(r)
 					node.Name = tag
