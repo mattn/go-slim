@@ -6,7 +6,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/labstack/echo"
+	"github.com/labstack/echo/v4"
 	"github.com/mattn/go-slim"
 )
 
@@ -31,7 +31,7 @@ func main() {
 		})
 	})
 	e.POST("/add", func(c echo.Context) error {
-		name := strings.TrimSpace(c.Request().PostFormValue("name"))
+		name := strings.TrimSpace(c.FormValue("name"))
 		if name != "" {
 			m.Lock()
 			defer m.Unlock()
