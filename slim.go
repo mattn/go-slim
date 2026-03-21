@@ -116,6 +116,7 @@ func isEmptyElement(n string) bool {
 }
 
 var rubyInlinePattern = regexp.MustCompile(`#{[^}]*}`)
+var jsVarPattern = regexp.MustCompile(`{{[a-zA-Z$_]+[a-zA-Z0-9$_]*}}`)
 
 func rubyInline(v *vm.VM, s string) (string, error) {
 	var fail error
@@ -708,7 +709,7 @@ func (t *Template) Execute(out io.Writer, value interface{}) error {
 }
 
 func javascriptRenderer(out io.Writer, n *Node, v *vm.VM) error {
-	re := regexp.MustCompile(`{{[a-zA-Z$_]+[a-zA-Z0-9$_]*}}`)
+	re := jsVarPattern
 	var err error
 	s := re.ReplaceAllStringFunc(n.Text, func(s string) string {
 		if err == nil {
