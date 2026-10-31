@@ -835,3 +835,50 @@ func TestIsAttributeValue(t *testing.T) {
 		}
 	}
 }
+
+func TestInlineEscape(t *testing.T) {
+	tests := []struct {
+		src    string
+		values Values
+		want   string
+	}{
+		{
+			src:    "p Hello #{name}\n",
+			values: Values{"name": "<script>alert(1)</script>"},
+			want:   "<p>Hello &lt;script&gt;alert(1)&lt;/script&gt;</p>\n",
+		},
+		{
+			src:    "a href=\"#{url}\" link\n",
+			values: Values{"url": `"><img src=x onerror=alert(1)>`},
+			want:   "<a href=\"&#34;&gt;&lt;img src=x onerror=alert(1)&gt;\">link</a>\n",
+		},
+		{
+			src:    "p Hello #{{name}}\n",
+			values: Values{"name": "<b>golang</b>"},
+			want:   "<p>Hello <b>golang</b></p>\n",
+		},
+		{
+			src:    "a href=\"#{{url}}\" link\n",
+			values: Values{"url": `"><img src=x>`},
+			want:   "<a href=\"&#34;><img src=x>\">link</a>\n",
+		},
+		{
+			src:    "a href=\"/search?q=#{q}&lang=ja\" link\n",
+			values: Values{"q": "a&b"},
+			want:   "<a href=\"/search?q=a&amp;b&lang=ja\">link</a>\n",
+		},
+	}
+	for _, tt := range tests {
+		tmpl, err := Parse(strings.NewReader(tt.src))
+		if err != nil {
+			t.Fatal(err)
+		}
+		var buf bytes.Buffer
+		if err := tmpl.Execute(&buf, tt.values); err != nil {
+			t.Fatal(err)
+		}
+		if got := buf.String(); got != tt.want {
+			t.Errorf("%q: want %q but got %q", tt.src, tt.want, got)
+		}
+	}
+}

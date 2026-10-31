@@ -15,7 +15,7 @@ Slim template engine for Go.
 * **Iteration** — `for` loops over slices, arrays, and channels
 * **Layouts** — `content_for` / `yield` with `SetLayout`, matching Ruby Slim conventions
 * **Embedded filesystem** — `ParseFS` for use with `embed.FS`
-* **String interpolation** — `Hello #{name}`
+* **String interpolation** — `Hello #{name}` (HTML-escaped), `#{{html}}` (raw)
 * **Custom renderers** — built-in `javascript:` and `css:` blocks, extensible via `RegisterRenderer`
 * **Whitespace control** — `>` (outer) and `<` (inner)
 * **Wrapped attributes** — `div(id="x" class="y")`
@@ -167,7 +167,10 @@ p< Removes inner whitespace
 ```slim
 p Hello #{name}
 a href="#{base_url}/path" Link
+p #{{trusted_html}}
 ```
+
+`#{...}` output is HTML-escaped. Use `#{{...}}` to output the value without escaping.
 
 ### Custom Renderers
 

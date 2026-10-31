@@ -122,13 +122,19 @@ func isEmptyElement(n string) bool {
 	return false
 }
 
-var rubyInlinePattern = regexp.MustCompile(`#{[^}]*}`)
+var rubyInlinePattern = regexp.MustCompile(`#\{\{[^}]*\}\}|#\{[^}]*\}`)
 var jsVarPattern = regexp.MustCompile(`{{[a-zA-Z$_]+[a-zA-Z0-9$_]*}}`)
 
+// rubyInline expands #{expr} (HTML-escaped) and #{{expr}} (raw) in s.
 func rubyInline(v *vm.VM, s string) (string, error) {
 	var fail error
 	text := rubyInlinePattern.ReplaceAllStringFunc(s, func(s string) string {
-		expr, err := v.Compile(s[2 : len(s)-1])
+		raw := strings.HasPrefix(s, "#{{")
+		src := s[2 : len(s)-1]
+		if raw {
+			src = s[3 : len(s)-2]
+		}
+		expr, err := v.Compile(src)
 		if err != nil {
 			fail = err
 			return ""
@@ -138,7 +144,10 @@ func rubyInline(v *vm.VM, s string) (string, error) {
 			fail = err
 			return ""
 		}
-		return fmt.Sprint(iv)
+		if raw {
+			return fmt.Sprint(iv)
+		}
+		return html.EscapeString(fmt.Sprint(iv))
 	})
 	if fail != nil {
 		return "", fail
@@ -309,7 +318,7 @@ func printNode(t *Template, out io.Writer, v *vm.VM, n *Node, indent int) error 
 					if err != nil {
 						return err
 					}
-					fmt.Fprintf(out, " %s=%q", a.Name, value)
+					fmt.Fprintf(out, " %s=\"%s\"", a.Name, strings.ReplaceAll(value, `"`, "&#34;"))
 				}
 			}
 		}
